@@ -1,4 +1,4 @@
-# Galaxia Responsive V2.1.6
+# Galaxia Responsive V2.1.7 PREMIUM
 
 Corrección visual de la V2.1 orientada a una galaxia tipo Andrómeda.
 
@@ -38,3 +38,15 @@ npm run build
 - Three.js 0.180.0
 - TypeScript 5.9.2
 - GLSL shaders
+
+## V2.1.7 Premium - Shooting Stars
+
+Esta versión incorpora una revisión completa de las estrellas fugaces:
+
+- Cabeza renderizada con `ShaderMaterial`.
+- Núcleo cálido `#fff2d8` y halo frío `#a9bee8`, coherentes con la galaxia.
+- Cola en un plano con `DataTexture` RGBA 2D y caída gaussiana transversal.
+- Longitud, ancho, velocidad, escala, ángulo y tiempo de aparición variables.
+- Movimiento alineado con la orientación visual de cada estrella fugaz.
+- Hasta 5 estrellas fugaces en escritorio con calidad alta.
+- Se conserva el ajuste del usuario `freeAngle = random() * Math.PI * 2.3`.

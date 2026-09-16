@@ -7,7 +7,7 @@ export default function Home() {
 
       <main className="content">
         <section className="hero">
-          <span className="eyebrow">GALAXIA RESPONSIVE · V2.1.6</span>
+          <span className="eyebrow">GALAXIA RESPONSIVE · V2.1.7 PREMIUM</span>
 
           <h1>
             Explora
