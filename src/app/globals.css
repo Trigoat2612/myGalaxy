@@ -4,7 +4,7 @@
 
 html {
   scroll-behavior: smooth;
-  background: #010207;
+  background: #010208;
 }
 
 html,
@@ -17,7 +17,7 @@ body {
 
 body {
   overflow-x: hidden;
-  background: #010207;
+  background: #010208;
   color: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -38,42 +38,63 @@ a {
 }
 
 .hero {
-  width: min(980px, 100%);
+  width: min(900px, 100%);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 80px 0;
+  padding: 80px 44px;
+  position: relative;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: min(760px, 92vw);
+  height: 390px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(2, 4, 13, 0.12) 0%,
+    rgba(2, 4, 13, 0.07) 48%,
+    transparent 76%
+  );
+  filter: blur(22px);
+  pointer-events: none;
 }
 
 .eyebrow {
   margin-bottom: 22px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.24em;
-  color: rgba(207, 216, 255, 0.7);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+  color: rgba(218, 225, 245, 0.76);
 }
 
 .hero h1 {
   margin: 0;
-  max-width: 950px;
-  font-size: clamp(3.5rem, 9vw, 8.3rem);
-  line-height: 0.88;
-  letter-spacing: -0.065em;
+  max-width: 900px;
+  font-size: clamp(3.2rem, 8vw, 7.3rem);
+  line-height: 0.91;
+  letter-spacing: -0.06em;
+  text-shadow: 0 7px 38px rgba(0, 0, 0, 0.9);
 }
 
 .hero h1 span {
-  color: #b8c4ff;
+  color: #bdc9e8;
 }
 
 .hero p {
-  max-width: 670px;
-  margin: 30px auto 0;
-  font-size: clamp(1rem, 2vw, 1.22rem);
+  max-width: 650px;
+  margin: 28px auto 0;
+  font-size: clamp(1rem, 1.8vw, 1.18rem);
   line-height: 1.65;
-  color: rgba(235, 239, 255, 0.72);
+  color: rgba(237, 241, 249, 0.82);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.95);
 }
 
 .actions {
@@ -81,7 +102,7 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  margin-top: 34px;
+  margin-top: 32px;
 }
 
 .primaryButton {
@@ -90,10 +111,10 @@ a {
   justify-content: center;
   min-height: 48px;
   padding: 0 26px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(219, 226, 244, 0.28);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.11);
-  box-shadow: 0 18px 55px rgba(59, 70, 170, 0.2);
+  background: rgba(8, 13, 30, 0.62);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(12px);
   color: #ffffff;
   text-decoration: none;
@@ -102,14 +123,15 @@ a {
 
 .primaryButton:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.48);
-  background: rgba(255, 255, 255, 0.17);
+  border-color: rgba(229, 234, 248, 0.5);
+  background: rgba(18, 26, 52, 0.76);
 }
 
 .hint {
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   letter-spacing: 0.07em;
-  color: rgba(214, 221, 255, 0.5);
+  color: rgba(213, 221, 241, 0.52);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
 
 .infoPanel {
@@ -119,10 +141,10 @@ a {
   gap: 1px;
   margin: 10svh 0 18svh;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.38);
   backdrop-filter: blur(18px);
 }
 
@@ -133,7 +155,7 @@ a {
   justify-content: center;
   gap: 8px;
   padding: 26px;
-  background: rgba(4, 7, 24, 0.55);
+  background: rgba(3, 6, 17, 0.7);
 }
 
 .infoPanel strong {
@@ -143,7 +165,7 @@ a {
 .infoPanel span {
   font-size: 0.87rem;
   line-height: 1.5;
-  color: rgba(228, 233, 255, 0.62);
+  color: rgba(228, 233, 245, 0.65);
 }
 
 @media (max-width: 720px) {
@@ -153,10 +175,15 @@ a {
 
   .hero {
     min-height: 100svh;
+    padding-inline: 16px;
+  }
+
+  .hero::before {
+    height: 420px;
   }
 
   .hero h1 {
-    font-size: clamp(3.3rem, 18vw, 5.4rem);
+    font-size: clamp(3rem, 17vw, 5.2rem);
   }
 
   .infoPanel {

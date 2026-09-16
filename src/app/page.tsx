@@ -7,7 +7,7 @@ export default function Home() {
 
       <main className="content">
         <section className="hero">
-          <span className="eyebrow">GALAXIA RESPONSIVE · V1.1</span>
+          <span className="eyebrow">GALAXIA RESPONSIVE · V2.1.6</span>
 
           <h1>
             Explora
@@ -15,30 +15,31 @@ export default function Home() {
           </h1>
 
           <p>
-            Una escena 3D responsive construida con React Three Fiber, Three.js y WebGL.
-            Mueve el cursor o desliza el dedo para percibir la profundidad.
+            Una galaxia procedural inspirada en la estructura visual de las grandes galaxias
+            espirales: disco inclinado, núcleo cálido, polvo interestelar y un cielo profundo
+            que conserva contraste y detalle.
           </p>
 
           <div className="actions">
             <a className="primaryButton" href="#arquitectura">
-              Comenzar exploración
+              Explorar arquitectura
             </a>
-            <span className="hint">Parallax · estrellas variables · meteoros</span>
+            <span className="hint">GLSL · GPU animation · dust lanes · adaptive rendering</span>
           </div>
         </section>
 
         <section id="arquitectura" className="infoPanel">
           <div>
-            <strong>GPU</strong>
-            <span>BufferGeometry + Points</span>
+            <strong>Disco galáctico</strong>
+            <span>Bulbo, disco fino y halo exterior con distribuciones independientes.</span>
           </div>
           <div>
-            <strong>Responsive</strong>
-            <span>Densidad y DPR adaptativos</span>
+            <strong>Polvo interestelar</strong>
+            <span>Bandas de extinción rompen la uniformidad y revelan la estructura.</span>
           </div>
           <div>
-            <strong>Accesible</strong>
-            <span>prefers-reduced-motion</span>
+            <strong>Render adaptativo</strong>
+            <span>La densidad y resolución se ajustan al rendimiento del dispositivo.</span>
           </div>
         </section>
       </main>
