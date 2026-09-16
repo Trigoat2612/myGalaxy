@@ -1,0 +1,42 @@
+.galaxy {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(54, 67, 157, 0.2), transparent 32%),
+    radial-gradient(ellipse at center, #101430 0%, #050713 45%, #010207 100%);
+}
+
+.galaxy canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.galaxy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(109, 121, 255, 0.13) 0%,
+      rgba(72, 68, 187, 0.05) 35%,
+      transparent 68%
+    );
+}
+
+.galaxy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(circle at center, transparent 48%, rgba(0, 0, 10, 0.42) 100%);
+}
