@@ -16,7 +16,11 @@ export const galaxyVertexShader = /* glsl */ `
   void main() {
     vec3 transformed = position;
 
-    float speed = 0.007 + 0.014 / (1.0 + aRadius * 0.48);
+    // Rotación diferencial: el núcleo avanza más rápido y el disco exterior
+    // conserva una deriva lenta. No mueve estrellas una por una en CPU.
+    float normalizedRadius = clamp(aRadius / 14.5, 0.0, 1.0);
+    float speed = mix(0.020, 0.0038, smoothstep(0.05, 1.0, normalizedRadius));
+    speed *= 0.94 + 0.06 * sin(aPhase * 1.7);
     float angle = uTime * speed;
     float c = cos(angle);
     float s = sin(angle);

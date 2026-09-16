@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import GalaxyShader from './GalaxyShader';
 import NebulaShader from './NebulaShader';
 import ShootingStars from './ShootingStars';
-import StarField from './StarField';
+import DepthStarLayers from './DepthStarLayers';
 import styles from './GalaxyBackground.module.css';
 
 type QualityLevel = 'low' | 'balanced' | 'high';
@@ -123,7 +123,7 @@ function ResponsiveScene({
     <>
       <CameraRig pointerRef={pointerRef} animate={animate} />
       <NebulaShader animate={animate} opacity={counts.nebula} />
-      <StarField count={counts.background} animate={animate} />
+      <DepthStarLayers count={counts.background} animate={animate} pointerRef={pointerRef} />
       <GalaxyShader stars={counts.galaxy} dust={counts.dust} animate={animate} />
       <ShootingStars count={counts.shooting} animate={animate} />
     </>

@@ -7,7 +7,7 @@ export default function Home() {
 
       <main className="content">
         <section className="hero">
-          <span className="eyebrow">GALAXIA RESPONSIVE · V2.1.7 PREMIUM</span>
+          <span className="eyebrow">GALAXIA RESPONSIVE · V2.2 · GALAXIA VIVA</span>
 
           <h1>
             Explora
@@ -15,27 +15,27 @@ export default function Home() {
           </h1>
 
           <p>
-            Una galaxia procedural inspirada en la estructura visual de las grandes galaxias
-            espirales: disco inclinado, núcleo cálido, polvo interestelar y un cielo profundo
-            que conserva contraste y detalle.
+            Una galaxia procedural con capas de profundidad, cúmulos estelares, variación térmica,
+            rotación diferencial y un núcleo vivo calculado en GPU, conservando la estructura
+            visual que ya estabilizamos.
           </p>
 
           <div className="actions">
             <a className="primaryButton" href="#arquitectura">
               Explorar arquitectura
             </a>
-            <span className="hint">GLSL · GPU animation · dust lanes · adaptive rendering</span>
+            <span className="hint">GLSL · differential rotation · star clusters · multilayer parallax</span>
           </div>
         </section>
 
         <section id="arquitectura" className="infoPanel">
           <div>
-            <strong>Disco galáctico</strong>
-            <span>Bulbo, disco fino y halo exterior con distribuciones independientes.</span>
+            <strong>Galaxia viva</strong>
+            <span>Núcleo orgánico, rotación diferencial y temperaturas estelares variadas.</span>
           </div>
           <div>
-            <strong>Polvo interestelar</strong>
-            <span>Bandas de extinción rompen la uniformidad y revelan la estructura.</span>
+            <strong>Profundidad</strong>
+            <span>Cúmulos, polvo con espesor y estrellas cercanas/lejanías con parallax independiente.</span>
           </div>
           <div>
             <strong>Render adaptativo</strong>

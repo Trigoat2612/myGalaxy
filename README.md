@@ -1,18 +1,70 @@
-# Galaxia Responsive V2.1.7 PREMIUM
+# Galaxia Responsive V2.2 — Galaxia Viva
 
-Corrección visual de la V2.1 orientada a una galaxia tipo Andrómeda.
+Evolución de la V2.1.7 Premium enfocada en **realismo, profundidad y vida visual**, sin cambiar la geometría que ya quedó estable.
 
-## Correcciones principales
+## Se conserva
 
-- Recupera la presencia visual de la galaxia sin volver a la sobreexposición de V2.
-- Elimina la máscara oscura del hero que ocultaba el núcleo.
-- Disco más elíptico e inclinado.
-- Núcleo cálido controlado.
-- Capa procedural continua para que la forma no dependa solo de puntos.
-- Brazos más difusos y bandas de polvo más visibles.
-- Estrellas individuales GLSL con brillo moderado.
-- Nebulosa y fondo conservan profundidad sin competir con la galaxia.
-- Parallax y calidad adaptativa continúan activos.
+- Ajuste `freeAngle = random() * Math.PI * 2.3`.
+- Estrellas fugaces Premium: cabeza con `ShaderMaterial` + cola texturizada.
+- Galaxia inclinada tipo Andrómeda.
+- Calidad adaptativa con `PerformanceMonitor`.
+- `prefers-reduced-motion`.
+- Next.js 15.5.25 + React 19.2.8 + R3F 9.7.0.
+
+## V2.2 — Cambios principales
+
+### Núcleo galáctico orgánico
+
+Nuevo `GalacticCore.tsx` con shader procedural independiente. Añade un bulbo cálido irregular sin sobreexponer el centro.
+
+### Cúmulos estelares
+
+Nuevo `StarClusters.tsx`. Los cúmulos usan el mismo shader de las estrellas principales para conservar coherencia visual y se distribuyen dentro del disco.
+
+### Temperaturas de estrellas
+
+La población principal mezcla de forma sutil estrellas:
+
+- azules calientes,
+- blancas/neutras,
+- amarillas cálidas,
+- gigantes rojizas poco frecuentes.
+
+El gradiente radial de la galaxia sigue siendo la base, así que el resultado no se convierte en confeti espacial, un riesgo que la humanidad ya ha explorado suficientemente.
+
+### Rotación diferencial GPU
+
+El `galaxyVertexShader` ahora hace que el núcleo rote ligeramente más rápido y el disco exterior más lento, calculado totalmente en GPU.
+
+### Polvo con mayor profundidad
+
+La capa de polvo tiene mayor dispersión vertical y menor dependencia de los brazos, dando sensación de volumen sin crear nuevas zonas angulares vacías.
+
+### Parallax multicapa
+
+Nuevo `DepthStarLayers.tsx`:
+
+- campo lejano con movimiento mínimo,
+- campo cercano con desplazamiento mayor,
+- ambos reaccionan de forma independiente al puntero.
+
+Esto añade profundidad sin mover miles de estrellas desde JavaScript.
+
+## Estructura relevante
+
+```text
+src/components/galaxy/
+├── DepthStarLayers.tsx
+├── GalacticCore.tsx
+├── StarClusters.tsx
+├── GalaxyBackground.tsx
+├── GalaxyDisc.tsx
+├── GalaxyShader.tsx
+├── NebulaShader.tsx
+├── ShootingStars.tsx
+├── StarField.tsx
+└── shaders.ts
+```
 
 ## Ejecutar
 
@@ -38,15 +90,3 @@ npm run build
 - Three.js 0.180.0
 - TypeScript 5.9.2
 - GLSL shaders
-
-## V2.1.7 Premium - Shooting Stars
-
-Esta versión incorpora una revisión completa de las estrellas fugaces:
-
-- Cabeza renderizada con `ShaderMaterial`.
-- Núcleo cálido `#fff2d8` y halo frío `#a9bee8`, coherentes con la galaxia.
-- Cola en un plano con `DataTexture` RGBA 2D y caída gaussiana transversal.
-- Longitud, ancho, velocidad, escala, ángulo y tiempo de aparición variables.
-- Movimiento alineado con la orientación visual de cada estrella fugaz.
-- Hasta 5 estrellas fugaces en escritorio con calidad alta.
-- Se conserva el ajuste del usuario `freeAngle = random() * Math.PI * 2.3`.

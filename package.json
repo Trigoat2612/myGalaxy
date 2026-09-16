@@ -1,6 +1,6 @@
 {
-  "name": "galaxia-responsive-v2-1-7-premium",
-  "version": "2.1.7",
+  "name": "galaxia-responsive-v2-2",
+  "version": "2.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

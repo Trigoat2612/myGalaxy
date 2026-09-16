@@ -5,6 +5,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import GalaxyDisc from './GalaxyDisc';
+import GalacticCore from './GalacticCore';
+import StarClusters from './StarClusters';
 import { galaxyFragmentShader, galaxyVertexShader } from './shaders';
 
 type GalaxyData = {
@@ -45,7 +47,15 @@ function createGalaxyData(count: number, dust = false): GalaxyData {
   const innerColor = new THREE.Color(dust ? '#4d5364' : '#d8e4ff');
   const middleColor = new THREE.Color(dust ? '#3f4a60' : '#9cb5e6');
   const outerColor = new THREE.Color(dust ? '#31394d' : '#7183b0');
+
+  // Variaciones térmicas sutiles: la estructura radial sigue mandando,
+  // pero algunas estrellas adquieren el matiz propio de su temperatura.
+  const hotBlue = new THREE.Color('#b7d8ff');
+  const neutralWhite = new THREE.Color('#f2f5ff');
+  const warmWhite = new THREE.Color('#ffe2b2');
+  const redGiant = new THREE.Color('#ffb19a');
   const color = new THREE.Color();
+  const temperatureColor = new THREE.Color();
 
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
@@ -63,9 +73,9 @@ function createGalaxyData(count: number, dust = false): GalaxyData {
       zoneOpacity = dust ? 0.15 : 0.92;
     } else if (selector < (dust ? 0.945 : 0.955)) {
       radius = 0.95 + Math.pow(random(), 0.72) * (maxRadius - 0.95);
-      ySpread = 0.035 + radius * 0.0075;
-      branchStrength = dust ? 0.66 : 0.43;
-      zoneOpacity = dust ? 0.125 : 0.78;
+      ySpread = dust ? 0.11 + radius * 0.016 : 0.035 + radius * 0.0075;
+      branchStrength = dust ? 0.34 : 0.43;
+      zoneOpacity = dust ? 0.095 : 0.78;
     } else {
       radius = 7.8 + Math.pow(random(), 0.58) * (maxRadius + 3.2 - 7.8);
       ySpread = 0.34 + random() * 0.72;
@@ -97,6 +107,22 @@ function createGalaxyData(count: number, dust = false): GalaxyData {
       color.copy(innerColor).lerp(middleColor, (normalizedRadius - 0.2) / 0.42);
     } else {
       color.copy(middleColor).lerp(outerColor, (normalizedRadius - 0.62) / 0.38);
+    }
+
+    if (!dust) {
+      const temperatureRoll = random();
+      if (temperatureRoll < 0.11) {
+        temperatureColor.copy(hotBlue);
+      } else if (temperatureRoll < 0.76) {
+        temperatureColor.copy(neutralWhite);
+      } else if (temperatureRoll < 0.985) {
+        temperatureColor.copy(warmWhite);
+      } else {
+        temperatureColor.copy(redGiant);
+      }
+
+      const temperatureInfluence = 0.10 + random() * 0.20;
+      color.lerp(temperatureColor, temperatureInfluence);
     }
 
     color.offsetHSL(
@@ -205,7 +231,9 @@ export default function GalaxyShader({
   return (
     <group rotation={[0.72, 0.04, -0.18]} scale={[1.26, 1.0, 0.74]} position={[0.08, -0.18, 0]}>
       <GalaxyDisc animate={animate} />
+      <GalacticCore animate={animate} />
       <ShaderPoints count={stars} animate={animate} />
+      <StarClusters count={Math.max(260, Math.round(stars * 0.034))} animate={animate} />
       <ShaderPoints count={dust} dust animate={animate} />
     </group>
   );

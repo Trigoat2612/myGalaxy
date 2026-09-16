@@ -15,12 +15,32 @@ function createRandom(seed = 92837) {
   };
 }
 
-export default function StarField({ count, animate }: { count: number; animate: boolean }) {
+type StarFieldProps = {
+  count: number;
+  animate: boolean;
+  pointSize?: number;
+  opacity?: number;
+  color?: string;
+  radiusMin?: number;
+  radiusMax?: number;
+  seedOffset?: number;
+};
+
+export default function StarField({
+  count,
+  animate,
+  pointSize = 2.5,
+  opacity = 0.46,
+  color = '#cbd7ef',
+  radiusMin = 22,
+  radiusMax = 53,
+  seedOffset = 0,
+}: StarFieldProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const gl = useThree((state) => state.gl);
 
   const data = useMemo(() => {
-    const random = createRandom(92837 + count);
+    const random = createRandom(92837 + count + seedOffset);
     const positions = new Float32Array(count * 3);
     const scales = new Float32Array(count);
     const phases = new Float32Array(count);
@@ -30,28 +50,30 @@ export default function StarField({ count, animate }: { count: number; animate: 
       const theta = random() * Math.PI * 2;
       const cosPhi = random() * 2 - 1;
       const sinPhi = Math.sqrt(1 - cosPhi * cosPhi);
-      const radius = 22 + random() * 31;
+      const radius = radiusMin + random() * (radiusMax - radiusMin);
 
       positions[i3] = radius * sinPhi * Math.cos(theta);
       positions[i3 + 1] = radius * cosPhi;
       positions[i3 + 2] = radius * sinPhi * Math.sin(theta);
 
-      scales[i] = random() > 0.987 ? 1.65 + random() * 1.15 : 0.32 + Math.pow(random(), 2.1) * 0.78;
+      scales[i] = random() > 0.989
+        ? 1.45 + random() * 1.0
+        : 0.28 + Math.pow(random(), 2.2) * 0.72;
       phases[i] = random() * Math.PI * 2;
     }
 
     return { positions, scales, phases };
-  }, [count]);
+  }, [count, radiusMin, radiusMax, seedOffset]);
 
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
       uPixelRatio: { value: 1 },
-      uPointSize: { value: 2.5 },
-      uColor: { value: new THREE.Color('#cbd7ef') },
-      uOpacity: { value: 0.46 },
+      uPointSize: { value: pointSize },
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
     }),
-    [],
+    [color, opacity, pointSize],
   );
 
   useFrame((state) => {
@@ -63,7 +85,7 @@ export default function StarField({ count, animate }: { count: number; animate: 
   });
 
   return (
-    <points renderOrder={-4}>
+    <points>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[data.positions, 3]} />
         <bufferAttribute attach="attributes-aScale" args={[data.scales, 1]} />
