@@ -92,19 +92,19 @@ function getSceneCounts(width: number, quality: QualityLevel) {
 
   if (isMobile) {
     if (quality === 'low') return { galaxy: 12000, dust: 1600, background: 900, shooting: 0, nebula: 0.18 };
-    if (quality === 'high') return { galaxy: 18500, dust: 2800, background: 1600, shooting: 1, nebula: 0.24 };
+    if (quality === 'high') return { galaxy: 18500, dust: 2800, background: 1600, shooting: 2, nebula: 0.24 };
     return { galaxy: 15000, dust: 2200, background: 1200, shooting: 1, nebula: 0.21 };
   }
 
   if (isTablet) {
-    if (quality === 'low') return { galaxy: 19500, dust: 2700, background: 1500, shooting: 1, nebula: 0.2 };
-    if (quality === 'high') return { galaxy: 30000, dust: 4700, background: 2500, shooting: 1, nebula: 0.27 };
+    if (quality === 'low') return { galaxy: 19500, dust: 2700, background: 1500, shooting: 2, nebula: 0.2 };
+    if (quality === 'high') return { galaxy: 30000, dust: 4700, background: 2500, shooting: 2, nebula: 0.27 };
     return { galaxy: 24500, dust: 3700, background: 1900, shooting: 1, nebula: 0.23 };
   }
 
-  if (quality === 'low') return { galaxy: 26000, dust: 3800, background: 2000, shooting: 1, nebula: 0.2 };
-  if (quality === 'high') return { galaxy: 42000, dust: 7000, background: 3600, shooting: 2, nebula: 0.29 };
-  return { galaxy: 34500, dust: 5400, background: 2800, shooting: 1, nebula: 0.25 };
+  if (quality === 'low') return { galaxy: 26000, dust: 3800, background: 2000, shooting: 3, nebula: 0.2 };
+  if (quality === 'high') return { galaxy: 42000, dust: 7000, background: 3600, shooting: 5, nebula: 0.29 };
+  return { galaxy: 34500, dust: 5400, background: 2800, shooting: 4, nebula: 0.25 };
 }
 
 function ResponsiveScene({
