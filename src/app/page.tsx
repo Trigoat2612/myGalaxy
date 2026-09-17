@@ -7,7 +7,7 @@ export default function Home() {
 
       <main className="content">
         <section className="hero">
-          <span className="eyebrow">GALAXIA RESPONSIVE · V2.5 · AMBIENTACIÓN + UX PREMIUM</span>
+          <span className="eyebrow">GALAXIA RESPONSIVE · V2.5.1 · AUTO AUDIO + UX PREMIUM</span>
 
           <h1>
             Explora
@@ -16,7 +16,7 @@ export default function Home() {
 
           <p>
             Una experiencia galáctica procedural con cinemática, exploración interactiva,
-            hotspots estelares, presentación automática y ambientación sonora opcional.
+            hotspots estelares, presentación automática y ambientación sonora automática con fallback al primer gesto.
           </p>
 
           <div className="actions">
@@ -30,7 +30,7 @@ export default function Home() {
         <section id="arquitectura" className="infoPanel">
           <div>
             <strong>Ambientación</strong>
-            <span>Audio opcional en loop con fade progresivo, volumen limitado y preferencia persistente.</span>
+            <span>Audio con intento automático, desbloqueo al primer gesto, fade progresivo y preferencia persistente.</span>
           </div>
           <div>
             <strong>Presentación</strong>

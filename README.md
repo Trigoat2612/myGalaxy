@@ -1,8 +1,8 @@
-# Galaxia Responsive V2.5 · Ambientación + UX Premium
+# Galaxia Responsive V2.5.1 · Auto Audio Unlock
 
-Evolución de V2.4.2.
+Evolución de V2.5.
 
-## Audio
+## Audio automático con fallback
 
 Coloca tu pista en:
 
@@ -10,16 +10,39 @@ Coloca tu pista en:
 public/audio/galaxy-ambient.mp3
 ```
 
-La reproducción no comienza automáticamente al cargar. El usuario la activa mediante el control de sonido.
+La V2.5.1 intenta iniciar la ambientación automáticamente al cargar la página.
+
+- Si el navegador permite autoplay con sonido, comienza de inmediato con fade-in.
+- Si el navegador lo bloquea, queda preparada y se desbloquea con el primer clic, toque o pulsación de tecla.
+- Si el usuario desactiva el sonido, esa preferencia se guarda y no vuelve a iniciarse automáticamente.
+- Se conserva la preferencia de volumen.
+- Se migra la preferencia previa de V2.5 si existe.
+
+### Comportamiento
+
+```text
+Carga
+  ↓
+Intento autoplay
+  ↓
+Permitido ─────→ fade-in 2.4 s
+  ↓ bloqueado
+Esperar primer gesto
+  ↓
+play() + fade-in 1.4 s
+```
+
+### Parámetros
 
 - Loop continuo
-- Fade-in de 1.8 s
-- Fade-out de 0.52 s
 - Volumen inicial: 0.14
 - Volumen máximo desde UI: 0.35
+- Fade-in autoplay: 2.4 s
+- Fade-in tras gesto: 1.4 s
+- Fade-out: 0.52 s
 - Preferencias guardadas en `localStorage`
 
-## UX V2.5
+## UX heredada de V2.5
 
 - Control de ambientación
 - Volumen ajustable
@@ -31,7 +54,9 @@ La reproducción no comienza automáticamente al cargar. El usuario la activa me
 
 ## Cinemática
 
-Se conserva la trayectoria fluida corregida de V2.4.2. La clave de sesión ahora es:
+Se conserva la trayectoria fluida corregida de V2.4.2 y la experiencia V2.5.
+
+La clave de sesión continúa siendo:
 
 ```text
 galaxy-cinematic-v2.5-seen
