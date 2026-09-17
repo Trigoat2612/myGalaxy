@@ -35,7 +35,7 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.5.2-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.6.2-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 function cinematicTimeWarp(t: number) {
@@ -69,6 +69,49 @@ function useReducedMotion() {
   }, []);
 
   return reducedMotion;
+}
+
+function usePageVisibility() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const update = () => setVisible(document.visibilityState !== 'hidden');
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+
+  return visible;
+}
+
+function detectInitialQuality(): { quality: QualityLevel; maxDpr: number } {
+  if (typeof window === 'undefined') return { quality: 'balanced', maxDpr: 1.25 };
+
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const memory = nav.deviceMemory ?? 8;
+  const cores = nav.hardwareConcurrency ?? 8;
+  const width = window.innerWidth;
+
+  if (width < 640 || memory <= 4 || cores <= 4) {
+    return { quality: 'low', maxDpr: 1 };
+  }
+
+  if (width >= 1280 && memory >= 8 && cores >= 8) {
+    return { quality: 'balanced', maxDpr: 1.3 };
+  }
+
+  return { quality: 'balanced', maxDpr: 1.2 };
+}
+
+function hasWebGLSupport() {
+  if (typeof document === 'undefined') return true;
+
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
 }
 
 function useGlobalPointer() {
@@ -345,7 +388,10 @@ function ResponsiveScene({
 
 export default function GalaxyBackground() {
   const reducedMotion = useReducedMotion();
+  const pageVisible = usePageVisibility();
   const pointerRef = useGlobalPointer();
+  const initialQuality = useMemo(() => detectInitialQuality(), []);
+  const webglSupported = useMemo(() => hasWebGLSupport(), []);
   const interactionRef = useRef<InteractionState>({
     yaw: DEFAULT_CAMERA.yaw,
     pitch: DEFAULT_CAMERA.pitch,
@@ -361,8 +407,9 @@ export default function GalaxyBackground() {
     stage: 'loading',
   });
 
-  const [quality, setQuality] = useState<QualityLevel>('balanced');
-  const [maxDpr, setMaxDpr] = useState(1.3);
+  const [quality, setQuality] = useState<QualityLevel>(initialQuality.quality);
+  const [maxDpr, setMaxDpr] = useState(initialQuality.maxDpr);
+  const lastQualityChangeRef = useRef(0);
   const [explorationEnabled, setExplorationEnabled] = useState(false);
   const [selectedHotspot, setSelectedHotspot] = useState<GalaxyHotspotId | null>(null);
   const [cinematicActive, setCinematicActive] = useState(false);
@@ -389,18 +436,26 @@ export default function GalaxyBackground() {
     return () => document.body.classList.remove('galaxy-exploring');
   }, [explorationEnabled]);
 
+  const canChangeQuality = () => {
+    const now = performance.now();
+    if (cinematicRef.current.active || now - lastQualityChangeRef.current < 8000) return false;
+    lastQualityChangeRef.current = now;
+    return true;
+  };
+
   const lowerQuality = () => {
-    // Do not regenerate star buffers while the camera is flying. A quality
-    // switch changes particle counts and can look like a camera jump.
-    if (cinematicRef.current.active) return;
+    if (!canChangeQuality()) return;
     setQuality('low');
     setMaxDpr(1);
   };
 
   const raiseQuality = () => {
-    if (cinematicRef.current.active) return;
-    setQuality('high');
-    setMaxDpr(1.45);
+    if (!canChangeQuality()) return;
+
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const capable = (nav.deviceMemory ?? 8) >= 6 && (nav.hardwareConcurrency ?? 8) >= 6;
+    setQuality(capable ? 'high' : 'balanced');
+    setMaxDpr(capable ? 1.35 : 1.2);
   };
 
   const finishCinematic = useCallback(() => {
@@ -490,6 +545,14 @@ export default function GalaxyBackground() {
     setExplorationEnabled(!explorationEnabled);
   };
 
+  if (!webglSupported) {
+    return (
+      <div className={styles.webglFallback} role="img" aria-label="Fondo espacial estático. WebGL no está disponible en este dispositivo.">
+        <span className={styles.webglFallbackStar} aria-hidden="true" />
+      </div>
+    );
+  }
+
   return (
     <>
       <div
@@ -497,7 +560,7 @@ export default function GalaxyBackground() {
         aria-hidden="true"
       >
         <Canvas
-          frameloop={reducedMotion ? 'demand' : 'always'}
+          frameloop={!pageVisible ? 'never' : reducedMotion ? 'demand' : 'always'}
           dpr={[1, maxDpr]}
           camera={{
             position: cinematicActive ? [-1.35, 3.75, 24.8] : [0.15, 1.58, 15.75],
@@ -520,7 +583,7 @@ export default function GalaxyBackground() {
           >
             <ResponsiveScene
               quality={quality}
-              animate={!reducedMotion}
+              animate={!reducedMotion && pageVisible}
               pointerRef={pointerRef}
               interactionRef={interactionRef}
               cinematicRef={cinematicRef}

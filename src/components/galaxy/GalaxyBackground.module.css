@@ -529,3 +529,125 @@
     animation: none;
   }
 }
+
+/* V2.6 · Performance, accesibilidad y responsive final */
+.explorerToggle:focus-visible,
+.resetButton:focus-visible,
+.regionButton:focus-visible,
+.regionButtonActive:focus-visible,
+.presentationButton:focus-visible,
+.audioToggle:focus-visible,
+.cinematicSkip:focus-visible {
+  outline: 2px solid rgba(214, 229, 255, 0.95);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(116, 151, 224, 0.18);
+}
+
+.webglFallback {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(128, 147, 210, 0.14), transparent 24%),
+    radial-gradient(ellipse at center, #070b1d 0%, #02040d 56%, #010208 100%);
+}
+
+.webglFallback::before,
+.webglFallback::after,
+.webglFallbackStar {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.webglFallback::before {
+  opacity: 0.8;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.8) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 28%, rgba(201,218,255,.76) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 46% 66%, rgba(255,239,211,.72) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 84% 72%, rgba(222,230,255,.72) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 27% 82%, rgba(189,207,255,.68) 0 1px, transparent 1.5px);
+  background-size: 190px 170px, 250px 220px, 310px 280px, 220px 260px, 340px 300px;
+}
+
+.webglFallback::after {
+  background: radial-gradient(ellipse at 50% 52%, rgba(107, 126, 191, 0.16), rgba(67, 74, 119, 0.06) 28%, transparent 55%);
+  transform: rotate(-12deg) scaleX(1.35) scaleY(0.45);
+}
+
+@media (max-width: 720px) {
+  .explorerToggle,
+  .resetButton,
+  .regionButton,
+  .regionButtonActive,
+  .presentationButton,
+  .audioToggle {
+    min-height: 44px;
+  }
+
+  .regionButton,
+  .regionButtonActive {
+    padding-inline: 13px;
+  }
+
+  .controlsHint {
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 430px) {
+  .explorerUi {
+    left: 10px;
+    right: 10px;
+    align-items: stretch;
+  }
+
+  .explorerToggle {
+    align-self: flex-end;
+  }
+
+  .explorerPanel {
+    width: 100%;
+    max-height: min(66svh, 520px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .audioUi {
+    max-width: calc(100vw - 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorerToggle,
+  .resetButton,
+  .regionButton,
+  .regionButtonActive,
+  .presentationButton,
+  .audioToggle,
+  .cinematicSkip,
+  .audioUi {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .explorerPanel,
+  .explorerToggle,
+  .audioToggle {
+    border-color: rgba(235, 242, 255, 0.5);
+    background: rgba(2, 5, 15, 0.92);
+  }
+
+  .regionButton,
+  .regionButtonActive,
+  .resetButton {
+    color: #f7f9ff;
+    border-color: rgba(235, 242, 255, 0.42);
+  }
+}

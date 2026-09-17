@@ -1,11 +1,15 @@
-GALAXIA RESPONSIVE V2.5 - AUDIO
-
 Coloca aquí tu archivo de audio con este nombre exacto:
 
 galaxy-ambient.mp3
 
-Ruta final esperada:
-/public/audio/galaxy-ambient.mp3
+Ruta pública esperada:
+/audio/galaxy-ambient.mp3
 
-La interfaz NO reproduce audio automáticamente al cargar la página.
-El usuario debe activarlo desde el control de sonido.
+IMPORTANTE:
+Este ZIP no incluye tu canción. Si reemplazas todo el proyecto por esta versión,
+vuelve a copiar galaxy-ambient.mp3 dentro de public/audio/ antes de hacer commit.
+
+Después de desplegar en Vercel, verifica directamente:
+https://TU-DOMINIO/audio/galaxy-ambient.mp3
+
+Si devuelve 404, el archivo no llegó al despliegue.

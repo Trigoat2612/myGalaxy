@@ -4,6 +4,8 @@ import { useEffect, type RefObject } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { DEFAULT_CAMERA } from './galaxyConfig';
+
 export type InteractionState = {
   yaw: number;
   pitch: number;
@@ -12,6 +14,9 @@ export type InteractionState = {
   targetPitch: number;
   targetZoom: number;
 };
+
+const MIN_ZOOM = 8.2;
+const MAX_ZOOM = 19.5;
 
 export default function InteractionController({
   enabled,
@@ -74,9 +79,52 @@ export default function InteractionController({
       event.preventDefault();
       interaction.targetZoom = THREE.MathUtils.clamp(
         interaction.targetZoom + event.deltaY * 0.008,
-        8.2,
-        19.5,
+        MIN_ZOOM,
+        MAX_ZOOM,
       );
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!enabled) return;
+      const interaction = interactionRef.current;
+      if (!interaction) return;
+
+      const target = event.target as HTMLElement | null;
+      if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+
+      let handled = true;
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw + 0.08, -0.9, 0.9);
+          break;
+        case 'ArrowRight':
+          interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw - 0.08, -0.9, 0.9);
+          break;
+        case 'ArrowUp':
+          interaction.targetPitch = THREE.MathUtils.clamp(interaction.targetPitch - 0.055, -0.18, 0.42);
+          break;
+        case 'ArrowDown':
+          interaction.targetPitch = THREE.MathUtils.clamp(interaction.targetPitch + 0.055, -0.18, 0.42);
+          break;
+        case '+':
+        case '=':
+          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom - 0.8, MIN_ZOOM, MAX_ZOOM);
+          break;
+        case '-':
+        case '_':
+          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom + 0.8, MIN_ZOOM, MAX_ZOOM);
+          break;
+        case 'Home':
+          interaction.targetYaw = DEFAULT_CAMERA.yaw;
+          interaction.targetPitch = DEFAULT_CAMERA.pitch;
+          interaction.targetZoom = DEFAULT_CAMERA.zoom;
+          break;
+        default:
+          handled = false;
+      }
+
+      if (handled) event.preventDefault();
     };
 
     element.style.cursor = enabled ? 'grab' : '';
@@ -87,6 +135,7 @@ export default function InteractionController({
     element.addEventListener('pointerup', stopDragging);
     element.addEventListener('pointercancel', stopDragging);
     element.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
 
     return () => {
       element.style.cursor = '';
@@ -96,6 +145,7 @@ export default function InteractionController({
       element.removeEventListener('pointerup', stopDragging);
       element.removeEventListener('pointercancel', stopDragging);
       element.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, [enabled, gl, interactionRef]);
 

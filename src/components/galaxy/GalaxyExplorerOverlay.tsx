@@ -29,15 +29,22 @@ export default function GalaxyExplorerOverlay({
         className={`${styles.explorerToggle} ${enabled ? styles.explorerToggleActive : ''}`}
         onClick={onToggle}
         aria-pressed={enabled}
+        aria-controls="galaxy-explorer-panel"
+        aria-expanded={enabled}
       >
-        <span className={styles.explorerDot} />
+        <span className={styles.explorerDot} aria-hidden="true" />
         {enabled ? 'Salir de exploración' : 'Explorar galaxia'}
       </button>
 
       {enabled && (
-        <div className={styles.explorerPanel}>
+        <div
+          id="galaxy-explorer-panel"
+          className={styles.explorerPanel}
+          role="region"
+          aria-label="Controles de exploración de la galaxia"
+        >
           <div className={styles.explorerPanelHeader}>
-            <div>
+            <div aria-live="polite" aria-atomic="true">
               <span className={styles.explorerEyebrow}>
                 {presentationActive ? 'PRESENTACIÓN AUTOMÁTICA' : 'MODO EXPLORACIÓN'}
               </span>
@@ -53,11 +60,12 @@ export default function GalaxyExplorerOverlay({
               'Arrastra para orbitar, usa la rueda para acercarte y selecciona una región.'}
           </p>
 
-          <div className={styles.regionButtons}>
+          <div className={styles.regionButtons} aria-label="Regiones galácticas">
             <button
               type="button"
               className={selected === null ? styles.regionButtonActive : styles.regionButton}
               onClick={() => onSelect(null)}
+              aria-pressed={selected === null}
             >
               General
             </button>
@@ -68,6 +76,7 @@ export default function GalaxyExplorerOverlay({
                 key={hotspot.id}
                 className={selected === hotspot.id ? styles.regionButtonActive : styles.regionButton}
                 onClick={() => onSelect(hotspot.id)}
+                aria-pressed={selected === hotspot.id}
               >
                 {hotspot.shortLabel}
               </button>
@@ -84,10 +93,11 @@ export default function GalaxyExplorerOverlay({
             {presentationActive ? 'Detener presentación' : 'Presentación automática'}
           </button>
 
-          <div className={styles.controlsHint}>
+          <div className={styles.controlsHint} aria-label="Controles disponibles">
             <span>Arrastrar · orbitar</span>
-            <span>Rueda · zoom</span>
-            <span>Click · enfocar</span>
+            <span>Rueda / + − · zoom</span>
+            <span>Flechas · orientar</span>
+            <span>Inicio · restablecer</span>
           </div>
         </div>
       )}

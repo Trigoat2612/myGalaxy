@@ -1,33 +1,43 @@
-# Galaxia Responsive V2.5.2 · Auto Audio Sync
+# Galaxia Responsive V2.6.2
 
-Evolución de la V2.5.1 centrada en acercar al máximo el comportamiento del audio a una activación automática respetando las políticas reales de los navegadores.
+Revisión de estabilidad de audio sobre V2.6.
 
-## Audio
+## Correcciones
 
-Coloca tu archivo aquí:
+- La precarga ya no interpreta automáticamente cualquier rechazo de `audio.play()` como archivo inexistente.
+- El estado `Audio no encontrado` solo aparece cuando una verificación HTTP de `/audio/galaxy-ambient.mp3` confirma `404` o `410`.
+- Los errores transitorios de `HTMLAudioElement`, abortos de carga y bloqueos de autoplay ya no se clasifican como archivo faltante.
+- Se espera `loadeddata` / `canplay` antes de la reproducción cuando es necesario.
+- Al ocultar la pestaña, el audio se pausa conservando `currentTime`.
+- Al volver a la pestaña, el audio retoma desde la misma posición si estaba activo.
+- Si estaba únicamente precargado/muted, vuelve al estado primed.
+- Si el usuario apagó el audio manualmente, cambiar de pestaña no lo reactiva.
+
+## Archivo de audio
+
+Este paquete NO incluye la canción del usuario. Debes conservar/copiar:
 
 ```text
 public/audio/galaxy-ambient.mp3
 ```
 
-### Flujo
+Después del despliegue prueba directamente:
 
-1. Al cargar, la pista intenta comenzar **muted** y con volumen 0.
-2. Si el navegador permite autoplay muted, la canción empieza a avanzar sincronizada con la cinemática.
-3. En el primer `pointerdown`, `touchstart` o `keydown`, se desactiva `muted` y entra el audio con fade-in.
-4. Si el navegador bloquea incluso el primer intento muted, el primer gesto intenta `play()` directamente.
-5. El usuario conserva control de mute y volumen.
+```text
+https://TU-DOMINIO/audio/galaxy-ambient.mp3
+```
 
-No existe una forma web fiable de forzar audio audible en la primera carga sin una interacción del usuario cuando el navegador lo bloquea por política.
+Si el navegador muestra/reproduce el MP3, Vercel publicó correctamente el archivo.
+Si devuelve 404, el problema es de archivo/ruta y no del controlador React.
 
-## Cambios adicionales
+## Repetir cinemática
 
-- Preferencias V2.5.2 con migración desde V2.5.1/V2.5.
-- Corrección integrada de `selected={selected}` en `GalaxyHotspots.tsx`.
-- `Next.js 16.3.5` para alinearse con el despliegue actual en Vercel.
-- Nueva clave de cinemática: `galaxy-cinematic-v2.5.2-seen`.
+```js
+sessionStorage.removeItem('galaxy-cinematic-v2.6.2-seen');
+location.reload();
+```
 
-## Probar
+## Build
 
 ```bash
 npm install
