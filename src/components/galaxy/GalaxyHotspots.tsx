@@ -250,6 +250,7 @@ function CoreMarker({ selected }: { selected: boolean }) {
         haloColor={selected ? '#d8e4ff' : '#9cb5e6'}
         opacity={selected ? 0.96 : 0.84}
         seed={1.1}
+        selected={selected}
       />
       <StarBillboard size={0.19} coreColor="#ffffff" haloColor="#d8e4ff" opacity={0.72} seed={1.7} position={[0.05, -0.02, 0.01]} selected={selected} />
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
