@@ -1,6 +1,6 @@
 {
-  "name": "galaxia-responsive-v2-5-1",
-  "version": "2.5.1",
+  "name": "galaxia-responsive-v2-5-2",
+  "version": "2.5.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,7 @@
   "dependencies": {
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "9.7.0",
-    "next": "^16.3.5",
+    "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "three": "0.180.0"

@@ -1,83 +1,36 @@
-# Galaxia Responsive V2.5.1 · Auto Audio Unlock
+# Galaxia Responsive V2.5.2 · Auto Audio Sync
 
-Evolución de V2.5.
+Evolución de la V2.5.1 centrada en acercar al máximo el comportamiento del audio a una activación automática respetando las políticas reales de los navegadores.
 
-## Audio automático con fallback
+## Audio
 
-Coloca tu pista en:
+Coloca tu archivo aquí:
 
 ```text
 public/audio/galaxy-ambient.mp3
 ```
 
-La V2.5.1 intenta iniciar la ambientación automáticamente al cargar la página.
+### Flujo
 
-- Si el navegador permite autoplay con sonido, comienza de inmediato con fade-in.
-- Si el navegador lo bloquea, queda preparada y se desbloquea con el primer clic, toque o pulsación de tecla.
-- Si el usuario desactiva el sonido, esa preferencia se guarda y no vuelve a iniciarse automáticamente.
-- Se conserva la preferencia de volumen.
-- Se migra la preferencia previa de V2.5 si existe.
+1. Al cargar, la pista intenta comenzar **muted** y con volumen 0.
+2. Si el navegador permite autoplay muted, la canción empieza a avanzar sincronizada con la cinemática.
+3. En el primer `pointerdown`, `touchstart` o `keydown`, se desactiva `muted` y entra el audio con fade-in.
+4. Si el navegador bloquea incluso el primer intento muted, el primer gesto intenta `play()` directamente.
+5. El usuario conserva control de mute y volumen.
 
-### Comportamiento
+No existe una forma web fiable de forzar audio audible en la primera carga sin una interacción del usuario cuando el navegador lo bloquea por política.
 
-```text
-Carga
-  ↓
-Intento autoplay
-  ↓
-Permitido ─────→ fade-in 2.4 s
-  ↓ bloqueado
-Esperar primer gesto
-  ↓
-play() + fade-in 1.4 s
-```
+## Cambios adicionales
 
-### Parámetros
+- Preferencias V2.5.2 con migración desde V2.5.1/V2.5.
+- Corrección integrada de `selected={selected}` en `GalaxyHotspots.tsx`.
+- `Next.js 16.3.5` para alinearse con el despliegue actual en Vercel.
+- Nueva clave de cinemática: `galaxy-cinematic-v2.5.2-seen`.
 
-- Loop continuo
-- Volumen inicial: 0.14
-- Volumen máximo desde UI: 0.35
-- Fade-in autoplay: 2.4 s
-- Fade-in tras gesto: 1.4 s
-- Fade-out: 0.52 s
-- Preferencias guardadas en `localStorage`
-
-## UX heredada de V2.5
-
-- Control de ambientación
-- Volumen ajustable
-- Feedback visual de enfoque
-- Microanimaciones de paneles y botones
-- Presentación automática entre hotspots
-- Controles responsive
-- `prefers-reduced-motion` respetado
-
-## Cinemática
-
-Se conserva la trayectoria fluida corregida de V2.4.2 y la experiencia V2.5.
-
-La clave de sesión continúa siendo:
-
-```text
-galaxy-cinematic-v2.5-seen
-```
-
-Para repetirla:
-
-```js
-sessionStorage.removeItem('galaxy-cinematic-v2.5-seen');
-location.reload();
-```
-
-## Desarrollo
+## Probar
 
 ```bash
 npm install
-npm run dev
-```
-
-## Producción
-
-```bash
 npm run build
+npm run dev
 ```

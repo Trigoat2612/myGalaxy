@@ -5,17 +5,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './GalaxyBackground.module.css';
 
 const AUDIO_URL = '/audio/galaxy-ambient.mp3';
-const AUDIO_ENABLED_KEY = 'galaxy-audio-v2.5.1-enabled';
-const AUDIO_VOLUME_KEY = 'galaxy-audio-v2.5.1-volume';
-const LEGACY_ENABLED_KEY = 'galaxy-audio-v2.5-enabled';
-const LEGACY_VOLUME_KEY = 'galaxy-audio-v2.5-volume';
+const AUDIO_ENABLED_KEY = 'galaxy-audio-v2.5.2-enabled';
+const AUDIO_VOLUME_KEY = 'galaxy-audio-v2.5.2-volume';
+const LEGACY_ENABLED_KEYS = ['galaxy-audio-v2.5.1-enabled', 'galaxy-audio-v2.5-enabled'];
+const LEGACY_VOLUME_KEYS = ['galaxy-audio-v2.5.1-volume', 'galaxy-audio-v2.5-volume'];
 const DEFAULT_VOLUME = 0.14;
-const AUTO_FADE_DURATION_MS = 2400;
 const GESTURE_FADE_DURATION_MS = 1400;
+const MANUAL_FADE_DURATION_MS = 900;
 const STOP_FADE_DURATION_MS = 520;
 
-type AudioStatus = 'off' | 'starting' | 'on' | 'blocked' | 'missing';
-type StartReason = 'autoplay' | 'gesture' | 'manual';
+type AudioStatus = 'off' | 'starting' | 'primed' | 'on' | 'blocked' | 'missing';
+type UnlockReason = 'gesture' | 'manual';
 
 function clampVolume(value: number) {
   return Math.min(0.35, Math.max(0, value));
@@ -25,12 +25,23 @@ function isAutoplayBlocked(error: unknown) {
   return error instanceof DOMException && error.name === 'NotAllowedError';
 }
 
+function getFirstStoredValue(keys: string[]) {
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+    if (value !== null) return value;
+  }
+
+  return null;
+}
+
 export default function GalaxyAudioController({ hidden = false }: { hidden?: boolean }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeFrameRef = useRef<number | null>(null);
   const attemptIdRef = useRef(0);
   const desiredEnabledRef = useRef(true);
   const mountedRef = useRef(true);
+  const unlockingRef = useRef(false);
+  const volumeRef = useRef(DEFAULT_VOLUME);
 
   const [status, setStatus] = useState<AudioStatus>('starting');
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
@@ -80,6 +91,7 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
     const audio = new Audio(AUDIO_URL);
     audio.loop = true;
     audio.preload = 'auto';
+    audio.muted = true;
     audio.volume = 0;
 
     audio.addEventListener('error', () => {
@@ -92,32 +104,83 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
     return audio;
   }, []);
 
-  const startAudio = useCallback(
-    async (reason: StartReason) => {
-      if (!desiredEnabledRef.current) return false;
+  /**
+   * Intenta arrancar el archivo silenciado. El autoplay muted suele estar
+   * permitido y hace que la pista avance desde el inicio de la cinemática.
+   */
+  const primeAudio = useCallback(async () => {
+    if (!desiredEnabledRef.current) return false;
 
+    const audio = ensureAudio();
+    const attemptId = ++attemptIdRef.current;
+
+    setStatus('starting');
+
+    try {
+      audio.muted = true;
+      audio.volume = 0;
+
+      if (audio.paused) {
+        await audio.play();
+      }
+
+      if (!mountedRef.current || attemptId !== attemptIdRef.current) return false;
+
+      localStorage.setItem(AUDIO_ENABLED_KEY, '1');
+      setStatus('primed');
+      return true;
+    } catch (error) {
+      if (!mountedRef.current || attemptId !== attemptIdRef.current) return false;
+
+      if (isAutoplayBlocked(error)) {
+        setStatus('blocked');
+        return false;
+      }
+
+      setStatus('missing');
+      return false;
+    }
+  }, [ensureAudio]);
+
+  /**
+   * Debe ejecutarse dentro de una interacción real cuando el navegador exige
+   * activación del usuario. Si la pista ya estaba reproduciéndose muted, solo
+   * la desmutea y aplica el fade sin reiniciar currentTime.
+   */
+  const unlockAudio = useCallback(
+    async (reason: UnlockReason) => {
+      if (!desiredEnabledRef.current || unlockingRef.current) return false;
+
+      unlockingRef.current = true;
       const audio = ensureAudio();
       const attemptId = ++attemptIdRef.current;
 
-      setStatus('starting');
-
       try {
+        audio.muted = false;
+
         if (audio.paused) {
           audio.volume = 0;
+          await audio.play();
         }
-
-        await audio.play();
 
         if (!mountedRef.current || attemptId !== attemptIdRef.current) return false;
 
         localStorage.setItem(AUDIO_ENABLED_KEY, '1');
         setStatus('on');
 
-        const fadeDuration = reason === 'autoplay' ? AUTO_FADE_DURATION_MS : GESTURE_FADE_DURATION_MS;
-        fadeTo(audio, volume, fadeDuration);
+        fadeTo(
+          audio,
+          volumeRef.current,
+          reason === 'gesture' ? GESTURE_FADE_DURATION_MS : MANUAL_FADE_DURATION_MS,
+        );
+
         return true;
       } catch (error) {
         if (!mountedRef.current || attemptId !== attemptIdRef.current) return false;
+
+        // Si incluso el intento con gesto falla por política, dejamos la pista
+        // preparada en muted y permitimos un nuevo intento.
+        audio.muted = true;
 
         if (isAutoplayBlocked(error)) {
           setStatus('blocked');
@@ -126,9 +189,11 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
 
         setStatus('missing');
         return false;
+      } finally {
+        unlockingRef.current = false;
       }
     },
-    [ensureAudio, fadeTo, volume],
+    [ensureAudio, fadeTo],
   );
 
   const stopAudio = useCallback(() => {
@@ -143,8 +208,17 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
       return;
     }
 
+    if (audio.muted || audio.volume <= 0.001) {
+      audio.pause();
+      audio.currentTime = 0;
+      setStatus('off');
+      return;
+    }
+
     fadeTo(audio, 0, STOP_FADE_DURATION_MS, () => {
       audio.pause();
+      audio.currentTime = 0;
+      audio.muted = true;
       if (mountedRef.current) setStatus('off');
     });
   }, [fadeTo]);
@@ -153,20 +227,21 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
     mountedRef.current = true;
 
     const storedVolumeRaw =
-      localStorage.getItem(AUDIO_VOLUME_KEY) ?? localStorage.getItem(LEGACY_VOLUME_KEY);
+      localStorage.getItem(AUDIO_VOLUME_KEY) ?? getFirstStoredValue(LEGACY_VOLUME_KEYS);
     const storedVolume = Number(storedVolumeRaw);
     const initialVolume =
       Number.isFinite(storedVolume) && storedVolume >= 0
         ? clampVolume(storedVolume)
         : DEFAULT_VOLUME;
 
+    volumeRef.current = initialVolume;
     setVolume(initialVolume);
 
     const currentPreference = localStorage.getItem(AUDIO_ENABLED_KEY);
-    const legacyPreference = localStorage.getItem(LEGACY_ENABLED_KEY);
+    const legacyPreference = getFirstStoredValue(LEGACY_ENABLED_KEYS);
 
-    // Primera visita: el audio queda habilitado por defecto y se intenta autoplay.
-    // Si el usuario lo había desactivado en V2.5, respetamos esa decisión.
+    // Primera visita: habilitado por defecto. Si el usuario lo desactivó en
+    // una versión anterior, mantenemos su elección.
     const wantsAudio =
       currentPreference !== null
         ? currentPreference !== '0'
@@ -185,17 +260,18 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
       };
     }
 
-    // Primer intento: si la política del navegador lo permite, comienza sin gesto.
-    void startAudio('autoplay');
+    // 1) Arrancamos muted para que la pista pueda avanzar desde el comienzo.
+    void primeAudio();
 
-    // Fallback transparente: cualquier primer gesto válido vuelve a intentar play().
+    // 2) El primer gesto válido intenta convertir esa reproducción silenciosa
+    //    en audio audible sin reiniciar la canción.
     const unlockOnGesture = () => {
       if (!desiredEnabledRef.current) return;
 
       const audio = audioRef.current;
-      if (audio && !audio.paused) return;
+      if (audio && !audio.paused && !audio.muted) return;
 
-      void startAudio('gesture');
+      void unlockAudio('gesture');
     };
 
     window.addEventListener('pointerdown', unlockOnGesture, { passive: true });
@@ -208,9 +284,11 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
       window.removeEventListener('touchstart', unlockOnGesture);
       window.removeEventListener('keydown', unlockOnGesture);
     };
-  }, [startAudio]);
+  }, [primeAudio, unlockAudio]);
 
   useEffect(() => {
+    volumeRef.current = volume;
+
     const audio = audioRef.current;
     if (!audio || status !== 'on') return;
     fadeTo(audio, volume, 260);
@@ -228,25 +306,26 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
   }, [cancelFade]);
 
   const toggle = () => {
-    const audio = audioRef.current;
-
-    if (status === 'on' || (status === 'starting' && audio && !audio.paused)) {
+    if (status === 'on') {
       stopAudio();
       return;
     }
 
     desiredEnabledRef.current = true;
     localStorage.setItem(AUDIO_ENABLED_KEY, '1');
-    void startAudio('manual');
+    void unlockAudio('manual');
   };
 
   const changeVolume = (value: number) => {
     const next = clampVolume(value);
+    volumeRef.current = next;
     setVolume(next);
     localStorage.setItem(AUDIO_VOLUME_KEY, String(next));
   };
 
   if (hidden) return null;
+
+  const waitingForGesture = status === 'primed' || status === 'blocked';
 
   return (
     <div className={styles.audioUi}>
@@ -262,14 +341,16 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
         </span>
         <span>
           {status === 'starting'
-            ? 'Iniciando…'
+            ? 'Preparando audio…'
             : status === 'on'
               ? 'Ambientación'
-              : status === 'blocked'
-                ? 'Activar sonido'
-                : status === 'missing'
-                  ? 'Audio no encontrado'
-                  : 'Sonido desactivado'}
+              : status === 'primed'
+                ? 'Audio preparado'
+                : status === 'blocked'
+                  ? 'Activar sonido'
+                  : status === 'missing'
+                    ? 'Audio no encontrado'
+                    : 'Sonido desactivado'}
         </span>
       </button>
 
@@ -288,8 +369,10 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
         </label>
       )}
 
-      {status === 'blocked' && (
-        <span className={styles.audioHint}>Se activará con tu primer clic, toque o tecla.</span>
+      {waitingForGesture && (
+        <span className={styles.audioHint}>
+          La pista ya está preparada. El primer clic, toque o tecla habilita el sonido.
+        </span>
       )}
 
       {status === 'missing' && (

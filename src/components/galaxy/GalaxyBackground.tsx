@@ -35,7 +35,7 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.5-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.5.2-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 function cinematicTimeWarp(t: number) {
