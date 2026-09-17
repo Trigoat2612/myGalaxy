@@ -1,52 +1,58 @@
-# Galaxia Responsive V2.4.2 · Cinematic Galaxy Experience
+# Galaxia Responsive V2.5 · Ambientación + UX Premium
 
-Evolución de la V2.3.2 orientada a presentación cinematográfica sin alterar la galaxia, los hotspots premium ni la distribución estelar estabilizada.
+Evolución de V2.4.2.
 
-## Novedades
+## Audio
 
-- Intro cinematográfica breve (7.4 s).
-- Cámara desde espacio profundo hacia la galaxia.
-- Aproximación al núcleo y apertura posterior a vista general.
-- Aparición progresiva de capas: estrellas profundas, nebulosa/galaxia y estrellas fugaces.
-- Overlay cinematográfico con estado y barra de progreso.
-- Botón `Saltar intro`.
-- La intro se reproduce una sola vez por sesión usando `sessionStorage`.
-- `prefers-reduced-motion` evita la cinemática automáticamente.
-- El modo exploración queda bloqueado mientras corre la intro y se habilita al finalizar.
+Coloca tu pista en:
 
-## Archivos principales
+```text
+public/audio/galaxy-ambient.mp3
+```
 
-- `src/components/galaxy/GalaxyBackground.tsx`
-- `src/components/galaxy/GalaxyCinematicOverlay.tsx`
-- `src/components/galaxy/GalaxyBackground.module.css`
+La reproducción no comienza automáticamente al cargar. El usuario la activa mediante el control de sonido.
 
-## Ejecutar
+- Loop continuo
+- Fade-in de 1.8 s
+- Fade-out de 0.52 s
+- Volumen inicial: 0.14
+- Volumen máximo desde UI: 0.35
+- Preferencias guardadas en `localStorage`
+
+## UX V2.5
+
+- Control de ambientación
+- Volumen ajustable
+- Feedback visual de enfoque
+- Microanimaciones de paneles y botones
+- Presentación automática entre hotspots
+- Controles responsive
+- `prefers-reduced-motion` respetado
+
+## Cinemática
+
+Se conserva la trayectoria fluida corregida de V2.4.2. La clave de sesión ahora es:
+
+```text
+galaxy-cinematic-v2.5-seen
+```
+
+Para repetirla:
+
+```js
+sessionStorage.removeItem('galaxy-cinematic-v2.5-seen');
+location.reload();
+```
+
+## Desarrollo
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Validar producción
+## Producción
 
 ```bash
 npm run build
 ```
-
-
-## V2.4.2 - Cinemática fluida
-- Duración reducida a 5 s.
-- Trayectoria Catmull-Rom continua para posición y objetivo de cámara.
-- Se elimina el lag acumulado de `camera.position.lerp` durante la intro.
-- Fases más cortas y usadas solo como información visual.
-- Overlay y barra de progreso con transiciones más rápidas.
-
-
-## V2.4.2 - Transición al núcleo sin salto
-
-- Trayectoria de cámara cambiada a una única `THREE.CubicBezierCurve3`.
-- Se elimina el nudo interno que podía percibirse como tirón al pasar de Aproximación a Núcleo galáctico.
-- La inversión de profundidad alrededor del núcleo ahora es gradual.
-- `PerformanceMonitor` no cambia la densidad/quality durante la cinemática para evitar regeneraciones visibles de partículas.
-- Duración ajustada a 4.85 s.
-- Clave de sesión: `galaxy-cinematic-v2.4.2-seen`.

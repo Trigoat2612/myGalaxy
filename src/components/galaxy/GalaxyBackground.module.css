@@ -331,3 +331,201 @@
     display: none;
   }
 }
+
+/* V2.5 · Ambientación + UX premium */
+.audioUi {
+  position: fixed;
+  left: clamp(12px, 2vw, 22px);
+  bottom: clamp(12px, 2vw, 22px);
+  z-index: 64;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  animation: premiumUiIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.audioToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(198, 215, 250, 0.14);
+  border-radius: 999px;
+  background: rgba(4, 8, 20, 0.68);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.3);
+  color: rgba(226, 235, 252, 0.68);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  backdrop-filter: blur(16px);
+  transition: transform 180ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.audioToggle:hover,
+.audioToggleActive {
+  transform: translateY(-1px);
+  border-color: rgba(185, 208, 255, 0.34);
+  background: rgba(10, 17, 38, 0.82);
+  color: #f5f8ff;
+}
+
+.audioGlyph {
+  color: #bcd1ff;
+  font-size: 0.82rem;
+  text-shadow: 0 0 12px rgba(156, 181, 230, 0.85);
+}
+
+.audioToggleActive .audioGlyph {
+  animation: audioPulse 2.4s ease-in-out infinite;
+}
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(198, 215, 250, 0.1);
+  border-radius: 999px;
+  background: rgba(4, 8, 20, 0.58);
+  color: rgba(214, 225, 248, 0.48);
+  font-size: 0.62rem;
+  backdrop-filter: blur(14px);
+  animation: premiumUiIn 220ms ease-out both;
+}
+
+.volumeControl input {
+  width: 80px;
+  accent-color: #a9c2ff;
+  cursor: pointer;
+}
+
+.audioHint {
+  max-width: min(260px, 54vw);
+  color: rgba(219, 228, 248, 0.46);
+  font-size: 0.61rem;
+}
+
+.presentationButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 38px;
+  margin-top: 14px;
+  border: 1px solid rgba(190, 210, 249, 0.11);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(222, 231, 250, 0.62);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.presentationButton:hover,
+.presentationButtonActive {
+  transform: translateY(-1px);
+  border-color: rgba(174, 205, 255, 0.3);
+  background: rgba(99, 133, 204, 0.1);
+  color: #f4f7ff;
+}
+
+.presentationButtonActive {
+  box-shadow: inset 0 0 22px rgba(114, 153, 232, 0.05), 0 0 24px rgba(91, 127, 201, 0.06);
+}
+
+.explorerPanel {
+  animation: explorerPanelIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.resetButton,
+.regionButton,
+.regionButtonActive {
+  transition: transform 160ms ease, color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.resetButton:hover,
+.regionButton:hover,
+.regionButtonActive:hover {
+  transform: translateY(-1px);
+}
+
+.selectionFeedback {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(174, 202, 255, 0.075), transparent 18%),
+    radial-gradient(circle at 50% 50%, transparent 22%, rgba(1, 3, 10, 0.06) 58%, rgba(1, 3, 10, 0.16) 100%);
+  animation: selectionFocus 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes explorerPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-7px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes premiumUiIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes selectionFocus {
+  0% { opacity: 0; transform: scale(0.985); }
+  35% { opacity: 1; }
+  100% { opacity: 0.52; transform: scale(1); }
+}
+
+@keyframes audioPulse {
+  0%, 100% { opacity: 0.62; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@media (max-width: 720px) {
+  .audioUi {
+    left: 10px;
+    bottom: 10px;
+    align-items: flex-start;
+    flex-direction: column-reverse;
+    gap: 7px;
+  }
+
+  .audioToggle {
+    min-height: 38px;
+    padding-inline: 12px;
+  }
+
+  .volumeControl {
+    height: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audioUi,
+  .explorerPanel,
+  .selectionFeedback {
+    animation: none;
+  }
+
+  .audioToggleActive .audioGlyph {
+    animation: none;
+  }
+}

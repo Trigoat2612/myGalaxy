@@ -11,6 +11,7 @@ import ShootingStars from './ShootingStars';
 import DepthStarLayers from './DepthStarLayers';
 import GalaxyExplorerOverlay from './GalaxyExplorerOverlay';
 import GalaxyCinematicOverlay, { type CinematicStage } from './GalaxyCinematicOverlay';
+import GalaxyAudioController from './GalaxyAudioController';
 import InteractionController, { type InteractionState } from './InteractionController';
 import {
   DEFAULT_CAMERA,
@@ -34,7 +35,8 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.4.2-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.5-seen';
+const PRESENTATION_INTERVAL_MS = 4300;
 
 function cinematicTimeWarp(t: number) {
   // Keep the flight almost linear, but soften only the start/end enough to
@@ -366,6 +368,7 @@ export default function GalaxyBackground() {
   const [cinematicActive, setCinematicActive] = useState(false);
   const [cinematicStage, setCinematicStage] = useState<CinematicStage>('loading');
   const [cinematicProgress, setCinematicProgress] = useState(0);
+  const [presentationActive, setPresentationActive] = useState(false);
 
   useEffect(() => {
     const alreadySeen = sessionStorage.getItem(CINEMATIC_SESSION_KEY) === '1';
@@ -428,15 +431,15 @@ export default function GalaxyBackground() {
     setCinematicStage(stage);
   }, []);
 
-  const resetCamera = () => {
+  const resetCamera = useCallback(() => {
     const interaction = interactionRef.current;
     interaction.targetYaw = DEFAULT_CAMERA.yaw;
     interaction.targetPitch = DEFAULT_CAMERA.pitch;
     interaction.targetZoom = DEFAULT_CAMERA.zoom;
     setSelectedHotspot(null);
-  };
+  }, []);
 
-  const selectHotspot = (id: GalaxyHotspotId | null) => {
+  const selectHotspot = useCallback((id: GalaxyHotspotId | null) => {
     if (cinematicRef.current.active) return;
     setSelectedHotspot(id);
     const interaction = interactionRef.current;
@@ -445,11 +448,45 @@ export default function GalaxyBackground() {
     interaction.targetZoom = id
       ? GALAXY_HOTSPOTS.find((item) => item.id === id)?.zoom ?? DEFAULT_CAMERA.zoom
       : DEFAULT_CAMERA.zoom;
+  }, []);
+
+  useEffect(() => {
+    if (!presentationActive || cinematicActive) return;
+
+    setExplorationEnabled(true);
+    let index = 0;
+    selectHotspot(GALAXY_HOTSPOTS[index].id);
+
+    const timer = window.setInterval(() => {
+      index = (index + 1) % GALAXY_HOTSPOTS.length;
+      selectHotspot(GALAXY_HOTSPOTS[index].id);
+    }, PRESENTATION_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, [cinematicActive, presentationActive, selectHotspot]);
+
+  const togglePresentation = () => {
+    if (cinematicRef.current.active) return;
+    setPresentationActive((current) => !current);
+    setExplorationEnabled(true);
+  };
+
+  const manualSelectHotspot = (id: GalaxyHotspotId | null) => {
+    setPresentationActive(false);
+    selectHotspot(id);
+  };
+
+  const handleResetCamera = () => {
+    setPresentationActive(false);
+    resetCamera();
   };
 
   const toggleExploration = () => {
     if (cinematicRef.current.active) return;
-    if (explorationEnabled) resetCamera();
+    if (explorationEnabled) {
+      setPresentationActive(false);
+      resetCamera();
+    }
     setExplorationEnabled(!explorationEnabled);
   };
 
@@ -490,13 +527,17 @@ export default function GalaxyBackground() {
               cinematicStage={cinematicStage}
               explorationEnabled={explorationEnabled}
               selectedHotspot={selectedHotspot}
-              onSelectHotspot={(id) => selectHotspot(id)}
+              onSelectHotspot={(id) => manualSelectHotspot(id)}
               onCinematicProgress={handleCinematicProgress}
               onCinematicComplete={finishCinematic}
             />
           </PerformanceMonitor>
         </Canvas>
       </div>
+
+      {selectedHotspot && !cinematicActive && (
+        <div key={selectedHotspot} className={styles.selectionFeedback} aria-hidden="true" />
+      )}
 
       <GalaxyCinematicOverlay
         active={cinematicActive}
@@ -505,13 +546,17 @@ export default function GalaxyBackground() {
         onSkip={skipCinematic}
       />
 
+      <GalaxyAudioController hidden={cinematicActive} />
+
       <div className={cinematicActive ? styles.explorerHiddenDuringIntro : undefined}>
         <GalaxyExplorerOverlay
           enabled={explorationEnabled}
           selected={selectedHotspot}
+          presentationActive={presentationActive}
           onToggle={toggleExploration}
-          onReset={resetCamera}
-          onSelect={selectHotspot}
+          onReset={handleResetCamera}
+          onSelect={manualSelectHotspot}
+          onTogglePresentation={togglePresentation}
         />
       </div>
     </>

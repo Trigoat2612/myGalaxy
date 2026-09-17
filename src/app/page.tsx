@@ -7,7 +7,7 @@ export default function Home() {
 
       <main className="content">
         <section className="hero">
-          <span className="eyebrow">GALAXIA RESPONSIVE · V2.3 · EXPLORACIÓN INTERACTIVA</span>
+          <span className="eyebrow">GALAXIA RESPONSIVE · V2.5 · AMBIENTACIÓN + UX PREMIUM</span>
 
           <h1>
             Explora
@@ -15,31 +15,30 @@ export default function Home() {
           </h1>
 
           <p>
-            Una galaxia procedural que ahora puede recorrerse: zoom limitado, órbita controlada,
-            regiones interactivas, transiciones de cámara y hotspots sobre la arquitectura GPU que
-            ya estabilizamos.
+            Una experiencia galáctica procedural con cinemática, exploración interactiva,
+            hotspots estelares, presentación automática y ambientación sonora opcional.
           </p>
 
           <div className="actions">
             <a className="primaryButton" href="#arquitectura">
               Explorar arquitectura
             </a>
-            <span className="hint">drag orbit · smooth zoom · hotspots · camera focus · adaptive GPU</span>
+            <span className="hint">cinematic flight · stellar hotspots · ambient audio · presentation mode · adaptive GPU</span>
           </div>
         </section>
 
         <section id="arquitectura" className="infoPanel">
           <div>
-            <strong>Exploración</strong>
-            <span>Modo interactivo activable con órbita, zoom y cámara con límites seguros.</span>
+            <strong>Ambientación</strong>
+            <span>Audio opcional en loop con fade progresivo, volumen limitado y preferencia persistente.</span>
           </div>
           <div>
-            <strong>Regiones</strong>
-            <span>Núcleo, brazo interior y cúmulo estelar pueden enfocarse mediante hotspots.</span>
+            <strong>Presentación</strong>
+            <span>Recorrido automático entre regiones estelares usando las transiciones de cámara existentes.</span>
           </div>
           <div>
             <strong>Experiencia</strong>
-            <span>La navegación normal permanece intacta hasta que el usuario activa la exploración.</span>
+            <span>Microanimaciones, feedback de enfoque y controles adaptados para escritorio y móvil.</span>
           </div>
         </section>
       </main>
