@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
@@ -10,6 +10,7 @@ import NebulaShader from './NebulaShader';
 import ShootingStars from './ShootingStars';
 import DepthStarLayers from './DepthStarLayers';
 import GalaxyExplorerOverlay from './GalaxyExplorerOverlay';
+import GalaxyCinematicOverlay, { type CinematicStage } from './GalaxyCinematicOverlay';
 import InteractionController, { type InteractionState } from './InteractionController';
 import {
   DEFAULT_CAMERA,
@@ -24,6 +25,33 @@ type PointerPosition = {
   x: number;
   y: number;
 };
+
+type CinematicRuntime = {
+  active: boolean;
+  startedAt: number | null;
+  progress: number;
+  stage: CinematicStage;
+};
+
+const CINEMATIC_DURATION = 4.85;
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.4.2-seen';
+
+function cinematicTimeWarp(t: number) {
+  // Keep the flight almost linear, but soften only the start/end enough to
+  // avoid a mechanical launch or landing. The lower blend preserves momentum.
+  const clamped = THREE.MathUtils.clamp(t, 0, 1);
+  const smoother = clamped * clamped * clamped * (clamped * (clamped * 6 - 15) + 10);
+  return THREE.MathUtils.lerp(clamped, smoother, 0.12);
+}
+
+function getCinematicStage(progress: number): CinematicStage {
+  if (progress < 0.025) return 'loading';
+  if (progress < 0.17) return 'deep-space';
+  if (progress < 0.60) return 'approach';
+  if (progress < 0.79) return 'core';
+  if (progress < 1) return 'reveal';
+  return 'complete';
+}
 
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -70,23 +98,115 @@ function useGlobalPointer() {
 function CameraRig({
   pointerRef,
   interactionRef,
+  cinematicRef,
   explorationEnabled,
   selectedHotspot,
   animate,
+  onCinematicProgress,
+  onCinematicComplete,
 }: {
   pointerRef: RefObject<PointerPosition>;
   interactionRef: RefObject<InteractionState>;
+  cinematicRef: RefObject<CinematicRuntime>;
   explorationEnabled: boolean;
   selectedHotspot: GalaxyHotspotId | null;
   animate: boolean;
+  onCinematicProgress: (progress: number, stage: CinematicStage) => void;
+  onCinematicComplete: () => void;
 }) {
   const camera = useThree((state) => state.camera);
   const currentTargetRef = useRef(new THREE.Vector3(...DEFAULT_CAMERA.target));
+  const lastReportedStageRef = useRef<CinematicStage>('loading');
+  const lastReportedBucketRef = useRef(-1);
+
+  const cinematicPositionCurve = useMemo(() => {
+    // One cubic Bézier, not a chain of spline segments. There is no internal
+    // knot at the approach/core boundary, so position and tangent stay smooth.
+    const target = new THREE.Vector3(...DEFAULT_CAMERA.target);
+    const cosPitch = Math.cos(DEFAULT_CAMERA.pitch);
+    const finalPosition = target.clone().add(
+      new THREE.Vector3(
+        Math.sin(DEFAULT_CAMERA.yaw) * cosPitch * DEFAULT_CAMERA.zoom,
+        Math.sin(DEFAULT_CAMERA.pitch) * DEFAULT_CAMERA.zoom,
+        Math.cos(DEFAULT_CAMERA.yaw) * cosPitch * DEFAULT_CAMERA.zoom,
+      ),
+    );
+
+    return new THREE.CubicBezierCurve3(
+      new THREE.Vector3(-1.35, 3.75, 24.8),
+      new THREE.Vector3(-0.62, 3.05, 19.7),
+      // This low-Z control point creates a close pass by the nucleus, but the
+      // Bézier turns around gradually instead of reversing at a spline knot.
+      new THREE.Vector3(0.18, 0.35, 2.5),
+      finalPosition,
+    );
+  }, []);
+
+  const cinematicTargetCurve = useMemo(
+    () =>
+      new THREE.CubicBezierCurve3(
+        new THREE.Vector3(0.22, 0.18, 0),
+        new THREE.Vector3(0.18, 0.10, 0),
+        new THREE.Vector3(0.07, -0.06, 0),
+        new THREE.Vector3(...DEFAULT_CAMERA.target),
+      ),
+    [],
+  );
 
   useFrame((state, delta) => {
     const pointer = pointerRef.current ?? { x: 0, y: 0 };
     const interaction = interactionRef.current;
-    if (!interaction) return;
+    const cinematic = cinematicRef.current;
+    if (!interaction || !cinematic) return;
+
+    if (cinematic.active) {
+      if (cinematic.startedAt === null) {
+        cinematic.startedAt = state.clock.elapsedTime;
+        camera.position.set(-1.35, 3.75, 24.8);
+        currentTargetRef.current.set(0.22, 0.18, 0);
+        camera.lookAt(currentTargetRef.current);
+      }
+
+      const elapsed = state.clock.elapsedTime - cinematic.startedAt;
+      const rawProgress = THREE.MathUtils.clamp(elapsed / CINEMATIC_DURATION, 0, 1);
+      const travel = cinematicTimeWarp(rawProgress);
+      cinematic.progress = rawProgress;
+      cinematic.stage = getCinematicStage(rawProgress);
+
+      const bucket = Math.floor(rawProgress * 60);
+      if (bucket !== lastReportedBucketRef.current || cinematic.stage !== lastReportedStageRef.current) {
+        lastReportedBucketRef.current = bucket;
+        lastReportedStageRef.current = cinematic.stage;
+        onCinematicProgress(rawProgress, cinematic.stage);
+      }
+
+      const desiredPosition = cinematicPositionCurve.getPointAt(travel);
+      const desiredTarget = cinematicTargetCurve.getPointAt(travel);
+
+      // A tiny lateral drift keeps the movement organic without slowing it down.
+      const driftEnvelope = Math.sin(Math.PI * rawProgress);
+      desiredPosition.x += Math.sin(state.clock.elapsedTime * 0.9) * 0.018 * driftEnvelope;
+      desiredPosition.y += Math.cos(state.clock.elapsedTime * 0.72) * 0.012 * driftEnvelope;
+
+      // The spline already guarantees continuity. Copying the sampled position directly
+      // removes the extra low-pass lag that made V2.4 feel paused between stages.
+      camera.position.copy(desiredPosition);
+      currentTargetRef.current.copy(desiredTarget);
+      camera.lookAt(currentTargetRef.current);
+
+      if (rawProgress >= 1) {
+        cinematic.active = false;
+        cinematic.stage = 'complete';
+        interaction.yaw = DEFAULT_CAMERA.yaw;
+        interaction.pitch = DEFAULT_CAMERA.pitch;
+        interaction.zoom = DEFAULT_CAMERA.zoom;
+        interaction.targetYaw = DEFAULT_CAMERA.yaw;
+        interaction.targetPitch = DEFAULT_CAMERA.pitch;
+        interaction.targetZoom = DEFAULT_CAMERA.zoom;
+        onCinematicComplete();
+      }
+      return;
+    }
 
     const hotspot = selectedHotspot
       ? GALAXY_HOTSPOTS.find((item) => item.id === selectedHotspot) ?? null
@@ -162,42 +282,61 @@ function ResponsiveScene({
   animate,
   pointerRef,
   interactionRef,
+  cinematicRef,
+  cinematicStage,
   explorationEnabled,
   selectedHotspot,
   onSelectHotspot,
+  onCinematicProgress,
+  onCinematicComplete,
 }: {
   quality: QualityLevel;
   animate: boolean;
   pointerRef: RefObject<PointerPosition>;
   interactionRef: RefObject<InteractionState>;
+  cinematicRef: RefObject<CinematicRuntime>;
+  cinematicStage: CinematicStage;
   explorationEnabled: boolean;
   selectedHotspot: GalaxyHotspotId | null;
   onSelectHotspot: (id: GalaxyHotspotId) => void;
+  onCinematicProgress: (progress: number, stage: CinematicStage) => void;
+  onCinematicComplete: () => void;
 }) {
   const { size } = useThree();
   const counts = getSceneCounts(size.width, quality);
+  const introActive = cinematicRef.current?.active ?? false;
+
+  const showDepth = !introActive || cinematicStage !== 'loading';
+  const showNebula = !introActive || ['approach', 'core', 'reveal', 'complete'].includes(cinematicStage);
+  const showGalaxy = !introActive || ['approach', 'core', 'reveal', 'complete'].includes(cinematicStage);
+  const showShooting = !introActive || ['reveal', 'complete'].includes(cinematicStage);
 
   return (
     <>
-      <InteractionController enabled={explorationEnabled} interactionRef={interactionRef} />
+      <InteractionController enabled={explorationEnabled && !introActive} interactionRef={interactionRef} />
       <CameraRig
         pointerRef={pointerRef}
         interactionRef={interactionRef}
+        cinematicRef={cinematicRef}
         explorationEnabled={explorationEnabled}
         selectedHotspot={selectedHotspot}
         animate={animate}
+        onCinematicProgress={onCinematicProgress}
+        onCinematicComplete={onCinematicComplete}
       />
-      <NebulaShader animate={animate} opacity={counts.nebula} />
-      <DepthStarLayers count={counts.background} animate={animate} pointerRef={pointerRef} />
-      <GalaxyShader
-        stars={counts.galaxy}
-        dust={counts.dust}
-        animate={animate}
-        explorationEnabled={explorationEnabled}
-        selectedHotspot={selectedHotspot}
-        onSelectHotspot={onSelectHotspot}
-      />
-      <ShootingStars count={counts.shooting} animate={animate} />
+      {showNebula && <NebulaShader animate={animate} opacity={counts.nebula} />}
+      {showDepth && <DepthStarLayers count={counts.background} animate={animate} pointerRef={pointerRef} />}
+      {showGalaxy && (
+        <GalaxyShader
+          stars={counts.galaxy}
+          dust={counts.dust}
+          animate={animate}
+          explorationEnabled={explorationEnabled && !introActive}
+          selectedHotspot={selectedHotspot}
+          onSelectHotspot={onSelectHotspot}
+        />
+      )}
+      {showShooting && <ShootingStars count={counts.shooting} animate={animate} />}
     </>
   );
 }
@@ -213,11 +352,34 @@ export default function GalaxyBackground() {
     targetPitch: DEFAULT_CAMERA.pitch,
     targetZoom: DEFAULT_CAMERA.zoom,
   });
+  const cinematicRef = useRef<CinematicRuntime>({
+    active: false,
+    startedAt: null,
+    progress: 0,
+    stage: 'loading',
+  });
 
   const [quality, setQuality] = useState<QualityLevel>('balanced');
   const [maxDpr, setMaxDpr] = useState(1.3);
   const [explorationEnabled, setExplorationEnabled] = useState(false);
   const [selectedHotspot, setSelectedHotspot] = useState<GalaxyHotspotId | null>(null);
+  const [cinematicActive, setCinematicActive] = useState(false);
+  const [cinematicStage, setCinematicStage] = useState<CinematicStage>('loading');
+  const [cinematicProgress, setCinematicProgress] = useState(0);
+
+  useEffect(() => {
+    const alreadySeen = sessionStorage.getItem(CINEMATIC_SESSION_KEY) === '1';
+    const shouldPlay = !reducedMotion && !alreadySeen;
+
+    cinematicRef.current.active = shouldPlay;
+    cinematicRef.current.startedAt = null;
+    cinematicRef.current.progress = shouldPlay ? 0 : 1;
+    cinematicRef.current.stage = shouldPlay ? 'loading' : 'complete';
+
+    setCinematicActive(shouldPlay);
+    setCinematicStage(shouldPlay ? 'loading' : 'complete');
+    setCinematicProgress(shouldPlay ? 0 : 1);
+  }, [reducedMotion]);
 
   useEffect(() => {
     document.body.classList.toggle('galaxy-exploring', explorationEnabled);
@@ -225,14 +387,46 @@ export default function GalaxyBackground() {
   }, [explorationEnabled]);
 
   const lowerQuality = () => {
+    // Do not regenerate star buffers while the camera is flying. A quality
+    // switch changes particle counts and can look like a camera jump.
+    if (cinematicRef.current.active) return;
     setQuality('low');
     setMaxDpr(1);
   };
 
   const raiseQuality = () => {
+    if (cinematicRef.current.active) return;
     setQuality('high');
     setMaxDpr(1.45);
   };
+
+  const finishCinematic = useCallback(() => {
+    cinematicRef.current.active = false;
+    cinematicRef.current.progress = 1;
+    cinematicRef.current.stage = 'complete';
+    setCinematicActive(false);
+    setCinematicProgress(1);
+    setCinematicStage('complete');
+    sessionStorage.setItem(CINEMATIC_SESSION_KEY, '1');
+  }, []);
+
+  const skipCinematic = () => {
+    cinematicRef.current.active = false;
+    cinematicRef.current.startedAt = null;
+    const interaction = interactionRef.current;
+    interaction.yaw = DEFAULT_CAMERA.yaw;
+    interaction.pitch = DEFAULT_CAMERA.pitch;
+    interaction.zoom = DEFAULT_CAMERA.zoom;
+    interaction.targetYaw = DEFAULT_CAMERA.yaw;
+    interaction.targetPitch = DEFAULT_CAMERA.pitch;
+    interaction.targetZoom = DEFAULT_CAMERA.zoom;
+    finishCinematic();
+  };
+
+  const handleCinematicProgress = useCallback((progress: number, stage: CinematicStage) => {
+    setCinematicProgress(progress);
+    setCinematicStage(stage);
+  }, []);
 
   const resetCamera = () => {
     const interaction = interactionRef.current;
@@ -243,6 +437,7 @@ export default function GalaxyBackground() {
   };
 
   const selectHotspot = (id: GalaxyHotspotId | null) => {
+    if (cinematicRef.current.active) return;
     setSelectedHotspot(id);
     const interaction = interactionRef.current;
     interaction.targetYaw = 0;
@@ -253,6 +448,7 @@ export default function GalaxyBackground() {
   };
 
   const toggleExploration = () => {
+    if (cinematicRef.current.active) return;
     if (explorationEnabled) resetCamera();
     setExplorationEnabled(!explorationEnabled);
   };
@@ -267,7 +463,7 @@ export default function GalaxyBackground() {
           frameloop={reducedMotion ? 'demand' : 'always'}
           dpr={[1, maxDpr]}
           camera={{
-            position: [0.15, 1.58, 15.75],
+            position: cinematicActive ? [-1.35, 3.75, 24.8] : [0.15, 1.58, 15.75],
             fov: 40,
             near: 0.1,
             far: 140,
@@ -290,21 +486,34 @@ export default function GalaxyBackground() {
               animate={!reducedMotion}
               pointerRef={pointerRef}
               interactionRef={interactionRef}
+              cinematicRef={cinematicRef}
+              cinematicStage={cinematicStage}
               explorationEnabled={explorationEnabled}
               selectedHotspot={selectedHotspot}
               onSelectHotspot={(id) => selectHotspot(id)}
+              onCinematicProgress={handleCinematicProgress}
+              onCinematicComplete={finishCinematic}
             />
           </PerformanceMonitor>
         </Canvas>
       </div>
 
-      <GalaxyExplorerOverlay
-        enabled={explorationEnabled}
-        selected={selectedHotspot}
-        onToggle={toggleExploration}
-        onReset={resetCamera}
-        onSelect={selectHotspot}
+      <GalaxyCinematicOverlay
+        active={cinematicActive}
+        stage={cinematicStage}
+        progress={cinematicProgress}
+        onSkip={skipCinematic}
       />
+
+      <div className={cinematicActive ? styles.explorerHiddenDuringIntro : undefined}>
+        <GalaxyExplorerOverlay
+          enabled={explorationEnabled}
+          selected={selectedHotspot}
+          onToggle={toggleExploration}
+          onReset={resetCamera}
+          onSelect={selectHotspot}
+        />
+      </div>
     </>
   );
 }
