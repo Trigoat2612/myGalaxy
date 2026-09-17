@@ -7,6 +7,8 @@ import * as THREE from 'three';
 import GalaxyDisc from './GalaxyDisc';
 import GalacticCore from './GalacticCore';
 import StarClusters from './StarClusters';
+import GalaxyHotspots from './GalaxyHotspots';
+import type { GalaxyHotspotId } from './galaxyConfig';
 import { galaxyFragmentShader, galaxyVertexShader } from './shaders';
 
 type GalaxyData = {
@@ -223,10 +225,16 @@ export default function GalaxyShader({
   stars,
   dust,
   animate,
+  explorationEnabled,
+  selectedHotspot,
+  onSelectHotspot,
 }: {
   stars: number;
   dust: number;
   animate: boolean;
+  explorationEnabled: boolean;
+  selectedHotspot: GalaxyHotspotId | null;
+  onSelectHotspot: (id: GalaxyHotspotId) => void;
 }) {
   return (
     <group rotation={[0.72, 0.04, -0.18]} scale={[1.26, 1.0, 0.74]} position={[0.08, -0.18, 0]}>
@@ -235,6 +243,11 @@ export default function GalaxyShader({
       <ShaderPoints count={stars} animate={animate} />
       <StarClusters count={Math.max(260, Math.round(stars * 0.034))} animate={animate} />
       <ShaderPoints count={dust} dust animate={animate} />
+      <GalaxyHotspots
+        enabled={explorationEnabled}
+        selected={selectedHotspot}
+        onSelect={onSelectHotspot}
+      />
     </group>
   );
 }

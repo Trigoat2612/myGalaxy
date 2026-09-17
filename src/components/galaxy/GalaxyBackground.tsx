@@ -9,6 +9,13 @@ import GalaxyShader from './GalaxyShader';
 import NebulaShader from './NebulaShader';
 import ShootingStars from './ShootingStars';
 import DepthStarLayers from './DepthStarLayers';
+import GalaxyExplorerOverlay from './GalaxyExplorerOverlay';
+import InteractionController, { type InteractionState } from './InteractionController';
+import {
+  DEFAULT_CAMERA,
+  GALAXY_HOTSPOTS,
+  type GalaxyHotspotId,
+} from './galaxyConfig';
 import styles from './GalaxyBackground.module.css';
 
 type QualityLevel = 'low' | 'balanced' | 'high';
@@ -62,25 +69,68 @@ function useGlobalPointer() {
 
 function CameraRig({
   pointerRef,
+  interactionRef,
+  explorationEnabled,
+  selectedHotspot,
   animate,
 }: {
   pointerRef: RefObject<PointerPosition>;
+  interactionRef: RefObject<InteractionState>;
+  explorationEnabled: boolean;
+  selectedHotspot: GalaxyHotspotId | null;
   animate: boolean;
 }) {
   const camera = useThree((state) => state.camera);
+  const currentTargetRef = useRef(new THREE.Vector3(...DEFAULT_CAMERA.target));
 
   useFrame((state, delta) => {
     const pointer = pointerRef.current ?? { x: 0, y: 0 };
-    const idleX = animate ? Math.sin(state.clock.elapsedTime * 0.05) * 0.035 : 0;
-    const targetX = animate ? 0.1 + pointer.x * 0.18 + idleX : 0.1;
-    const targetY = animate ? 1.65 + pointer.y * 0.11 : 1.65;
-    const targetZ = animate ? 15.85 + Math.cos(state.clock.elapsedTime * 0.035) * 0.03 : 15.85;
-    const easing = 1 - Math.exp(-delta * 2.2);
+    const interaction = interactionRef.current;
+    if (!interaction) return;
 
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, easing);
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, easing);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, easing);
-    camera.lookAt(0.15, -0.08, 0);
+    const hotspot = selectedHotspot
+      ? GALAXY_HOTSPOTS.find((item) => item.id === selectedHotspot) ?? null
+      : null;
+
+    const desiredTarget = hotspot
+      ? new THREE.Vector3(...hotspot.cameraTarget)
+      : new THREE.Vector3(...DEFAULT_CAMERA.target);
+
+    if (!explorationEnabled && animate) {
+      desiredTarget.x += pointer.x * 0.035;
+      desiredTarget.y += pointer.y * 0.018;
+    }
+
+    const targetEasing = 1 - Math.exp(-delta * (hotspot ? 2.8 : 2.1));
+    currentTargetRef.current.lerp(desiredTarget, targetEasing);
+
+    let desiredYaw = interaction.targetYaw;
+    let desiredPitch = interaction.targetPitch;
+    let desiredZoom = interaction.targetZoom;
+
+    if (!explorationEnabled) {
+      const idleYaw = animate ? Math.sin(state.clock.elapsedTime * 0.05) * 0.0025 : 0;
+      desiredYaw = pointer.x * 0.011 + idleYaw;
+      desiredPitch = DEFAULT_CAMERA.pitch - pointer.y * 0.006;
+      desiredZoom = DEFAULT_CAMERA.zoom + (animate ? Math.cos(state.clock.elapsedTime * 0.035) * 0.03 : 0);
+    }
+
+    const orbitEasing = 1 - Math.exp(-delta * 3.0);
+    interaction.yaw = THREE.MathUtils.lerp(interaction.yaw, desiredYaw, orbitEasing);
+    interaction.pitch = THREE.MathUtils.lerp(interaction.pitch, desiredPitch, orbitEasing);
+    interaction.zoom = THREE.MathUtils.lerp(interaction.zoom, desiredZoom, orbitEasing);
+
+    const cosPitch = Math.cos(interaction.pitch);
+    const offset = new THREE.Vector3(
+      Math.sin(interaction.yaw) * cosPitch * interaction.zoom,
+      Math.sin(interaction.pitch) * interaction.zoom,
+      Math.cos(interaction.yaw) * cosPitch * interaction.zoom,
+    );
+
+    const desiredPosition = currentTargetRef.current.clone().add(offset);
+    const cameraEasing = 1 - Math.exp(-delta * 4.0);
+    camera.position.lerp(desiredPosition, cameraEasing);
+    camera.lookAt(currentTargetRef.current);
   });
 
   return null;
@@ -111,20 +161,42 @@ function ResponsiveScene({
   quality,
   animate,
   pointerRef,
+  interactionRef,
+  explorationEnabled,
+  selectedHotspot,
+  onSelectHotspot,
 }: {
   quality: QualityLevel;
   animate: boolean;
   pointerRef: RefObject<PointerPosition>;
+  interactionRef: RefObject<InteractionState>;
+  explorationEnabled: boolean;
+  selectedHotspot: GalaxyHotspotId | null;
+  onSelectHotspot: (id: GalaxyHotspotId) => void;
 }) {
   const { size } = useThree();
   const counts = getSceneCounts(size.width, quality);
 
   return (
     <>
-      <CameraRig pointerRef={pointerRef} animate={animate} />
+      <InteractionController enabled={explorationEnabled} interactionRef={interactionRef} />
+      <CameraRig
+        pointerRef={pointerRef}
+        interactionRef={interactionRef}
+        explorationEnabled={explorationEnabled}
+        selectedHotspot={selectedHotspot}
+        animate={animate}
+      />
       <NebulaShader animate={animate} opacity={counts.nebula} />
       <DepthStarLayers count={counts.background} animate={animate} pointerRef={pointerRef} />
-      <GalaxyShader stars={counts.galaxy} dust={counts.dust} animate={animate} />
+      <GalaxyShader
+        stars={counts.galaxy}
+        dust={counts.dust}
+        animate={animate}
+        explorationEnabled={explorationEnabled}
+        selectedHotspot={selectedHotspot}
+        onSelectHotspot={onSelectHotspot}
+      />
       <ShootingStars count={counts.shooting} animate={animate} />
     </>
   );
@@ -133,8 +205,24 @@ function ResponsiveScene({
 export default function GalaxyBackground() {
   const reducedMotion = useReducedMotion();
   const pointerRef = useGlobalPointer();
+  const interactionRef = useRef<InteractionState>({
+    yaw: DEFAULT_CAMERA.yaw,
+    pitch: DEFAULT_CAMERA.pitch,
+    zoom: DEFAULT_CAMERA.zoom,
+    targetYaw: DEFAULT_CAMERA.yaw,
+    targetPitch: DEFAULT_CAMERA.pitch,
+    targetZoom: DEFAULT_CAMERA.zoom,
+  });
+
   const [quality, setQuality] = useState<QualityLevel>('balanced');
   const [maxDpr, setMaxDpr] = useState(1.3);
+  const [explorationEnabled, setExplorationEnabled] = useState(false);
+  const [selectedHotspot, setSelectedHotspot] = useState<GalaxyHotspotId | null>(null);
+
+  useEffect(() => {
+    document.body.classList.toggle('galaxy-exploring', explorationEnabled);
+    return () => document.body.classList.remove('galaxy-exploring');
+  }, [explorationEnabled]);
 
   const lowerQuality = () => {
     setQuality('low');
@@ -146,37 +234,77 @@ export default function GalaxyBackground() {
     setMaxDpr(1.45);
   };
 
-  return (
-    <div className={styles.galaxy} aria-hidden="true">
-      <Canvas
-        frameloop={reducedMotion ? 'demand' : 'always'}
-        dpr={[1, maxDpr]}
-        camera={{
-          position: [0.1, 1.65, 15.85],
-          fov: 40,
-          near: 0.1,
-          far: 140,
-        }}
-        gl={{
-          antialias: false,
-          alpha: true,
-          powerPreference: 'high-performance',
-        }}
-      >
-        <color attach="background" args={['#01030a']} />
+  const resetCamera = () => {
+    const interaction = interactionRef.current;
+    interaction.targetYaw = DEFAULT_CAMERA.yaw;
+    interaction.targetPitch = DEFAULT_CAMERA.pitch;
+    interaction.targetZoom = DEFAULT_CAMERA.zoom;
+    setSelectedHotspot(null);
+  };
 
-        <PerformanceMonitor
-          onIncline={raiseQuality}
-          onDecline={lowerQuality}
-          onFallback={lowerQuality}
+  const selectHotspot = (id: GalaxyHotspotId | null) => {
+    setSelectedHotspot(id);
+    const interaction = interactionRef.current;
+    interaction.targetYaw = 0;
+    interaction.targetPitch = DEFAULT_CAMERA.pitch;
+    interaction.targetZoom = id
+      ? GALAXY_HOTSPOTS.find((item) => item.id === id)?.zoom ?? DEFAULT_CAMERA.zoom
+      : DEFAULT_CAMERA.zoom;
+  };
+
+  const toggleExploration = () => {
+    if (explorationEnabled) resetCamera();
+    setExplorationEnabled(!explorationEnabled);
+  };
+
+  return (
+    <>
+      <div
+        className={`${styles.galaxy} ${explorationEnabled ? styles.galaxyInteractive : ''}`}
+        aria-hidden="true"
+      >
+        <Canvas
+          frameloop={reducedMotion ? 'demand' : 'always'}
+          dpr={[1, maxDpr]}
+          camera={{
+            position: [0.15, 1.58, 15.75],
+            fov: 40,
+            near: 0.1,
+            far: 140,
+          }}
+          gl={{
+            antialias: false,
+            alpha: true,
+            powerPreference: 'high-performance',
+          }}
         >
-          <ResponsiveScene
-            quality={quality}
-            animate={!reducedMotion}
-            pointerRef={pointerRef}
-          />
-        </PerformanceMonitor>
-      </Canvas>
-    </div>
+          <color attach="background" args={['#01030a']} />
+
+          <PerformanceMonitor
+            onIncline={raiseQuality}
+            onDecline={lowerQuality}
+            onFallback={lowerQuality}
+          >
+            <ResponsiveScene
+              quality={quality}
+              animate={!reducedMotion}
+              pointerRef={pointerRef}
+              interactionRef={interactionRef}
+              explorationEnabled={explorationEnabled}
+              selectedHotspot={selectedHotspot}
+              onSelectHotspot={(id) => selectHotspot(id)}
+            />
+          </PerformanceMonitor>
+        </Canvas>
+      </div>
+
+      <GalaxyExplorerOverlay
+        enabled={explorationEnabled}
+        selected={selectedHotspot}
+        onToggle={toggleExploration}
+        onReset={resetCamera}
+        onSelect={selectHotspot}
+      />
+    </>
   );
 }

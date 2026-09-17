@@ -7,7 +7,7 @@ export default function Home() {
 
       <main className="content">
         <section className="hero">
-          <span className="eyebrow">GALAXIA RESPONSIVE · V2.2 · GALAXIA VIVA</span>
+          <span className="eyebrow">GALAXIA RESPONSIVE · V2.3 · EXPLORACIÓN INTERACTIVA</span>
 
           <h1>
             Explora
@@ -15,31 +15,31 @@ export default function Home() {
           </h1>
 
           <p>
-            Una galaxia procedural con capas de profundidad, cúmulos estelares, variación térmica,
-            rotación diferencial y un núcleo vivo calculado en GPU, conservando la estructura
-            visual que ya estabilizamos.
+            Una galaxia procedural que ahora puede recorrerse: zoom limitado, órbita controlada,
+            regiones interactivas, transiciones de cámara y hotspots sobre la arquitectura GPU que
+            ya estabilizamos.
           </p>
 
           <div className="actions">
             <a className="primaryButton" href="#arquitectura">
               Explorar arquitectura
             </a>
-            <span className="hint">GLSL · differential rotation · star clusters · multilayer parallax</span>
+            <span className="hint">drag orbit · smooth zoom · hotspots · camera focus · adaptive GPU</span>
           </div>
         </section>
 
         <section id="arquitectura" className="infoPanel">
           <div>
-            <strong>Galaxia viva</strong>
-            <span>Núcleo orgánico, rotación diferencial y temperaturas estelares variadas.</span>
+            <strong>Exploración</strong>
+            <span>Modo interactivo activable con órbita, zoom y cámara con límites seguros.</span>
           </div>
           <div>
-            <strong>Profundidad</strong>
-            <span>Cúmulos, polvo con espesor y estrellas cercanas/lejanías con parallax independiente.</span>
+            <strong>Regiones</strong>
+            <span>Núcleo, brazo interior y cúmulo estelar pueden enfocarse mediante hotspots.</span>
           </div>
           <div>
-            <strong>Render adaptativo</strong>
-            <span>La densidad y resolución se ajustan al rendimiento del dispositivo.</span>
+            <strong>Experiencia</strong>
+            <span>La navegación normal permanece intacta hasta que el usuario activa la exploración.</span>
           </div>
         </section>
       </main>

@@ -204,3 +204,18 @@ a {
     transition: none;
   }
 }
+
+.content {
+  transition: opacity 220ms ease, filter 220ms ease;
+}
+
+body.galaxy-exploring {
+  overflow: hidden;
+}
+
+body.galaxy-exploring .content {
+  pointer-events: none;
+  opacity: 0.14;
+  filter: blur(1.5px);
+  user-select: none;
+}

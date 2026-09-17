@@ -39,3 +39,186 @@
     linear-gradient(to bottom, rgba(0, 0, 5, 0.06), transparent 18%, transparent 76%, rgba(0, 0, 7, 0.12)),
     radial-gradient(circle at center, transparent 42%, rgba(0, 0, 8, 0.24) 100%);
 }
+
+.galaxyInteractive {
+  pointer-events: auto;
+}
+
+.explorerUi {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.explorerToggle,
+.resetButton,
+.regionButton,
+.regionButtonActive {
+  border: 0;
+  color: #f7f9ff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.explorerToggle {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(206, 219, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(5, 9, 22, 0.72);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.explorerToggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(216, 228, 255, 0.38);
+  background: rgba(10, 16, 36, 0.84);
+}
+
+.explorerToggleActive {
+  border-color: rgba(170, 201, 255, 0.42);
+  background: rgba(11, 20, 45, 0.88);
+}
+
+.explorerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #bcd1ff;
+  box-shadow: 0 0 14px rgba(156, 181, 230, 0.9);
+}
+
+.explorerPanel {
+  pointer-events: auto;
+  width: min(360px, calc(100vw - 40px));
+  padding: 18px;
+  border: 1px solid rgba(210, 220, 246, 0.12);
+  border-radius: 20px;
+  background: rgba(4, 8, 20, 0.76);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(20px);
+}
+
+.explorerPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.explorerPanelHeader > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.explorerPanelHeader strong {
+  font-size: 1.02rem;
+}
+
+.explorerEyebrow {
+  color: rgba(199, 214, 244, 0.56);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.resetButton {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(234, 240, 255, 0.7);
+  font-size: 0.72rem;
+}
+
+.explorerPanel p {
+  margin: 14px 0 16px;
+  color: rgba(228, 235, 250, 0.68);
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+.regionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.regionButton,
+.regionButtonActive {
+  padding: 8px 11px;
+  border: 1px solid rgba(220, 229, 249, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(226, 234, 250, 0.66);
+  font-size: 0.73rem;
+}
+
+.regionButton:hover,
+.regionButtonActive {
+  border-color: rgba(185, 208, 255, 0.32);
+  background: rgba(124, 159, 222, 0.12);
+  color: #f4f7ff;
+}
+
+.controlsHint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(199, 211, 237, 0.44);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
+.hotspotLabel {
+  white-space: nowrap;
+  padding: 5px 8px;
+  border: 1px solid rgba(198, 214, 249, 0.12);
+  border-radius: 999px;
+  background: rgba(3, 7, 18, 0.76);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
+  color: rgba(224, 233, 252, 0.68);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(8px);
+}
+
+.hotspotLabelActive {
+  border-color: rgba(255, 226, 179, 0.36);
+  color: #fff0d5;
+  background: rgba(24, 18, 16, 0.78);
+}
+
+@media (max-width: 720px) {
+  .explorerUi {
+    top: 12px;
+    right: 12px;
+  }
+
+  .explorerToggle {
+    min-height: 40px;
+    padding-inline: 14px;
+    font-size: 0.78rem;
+  }
+
+  .explorerPanel {
+    width: min(330px, calc(100vw - 24px));
+    padding: 15px;
+  }
+}
