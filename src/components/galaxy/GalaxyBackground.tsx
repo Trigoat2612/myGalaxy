@@ -18,6 +18,8 @@ import {
   GALAXY_HOTSPOTS,
   type GalaxyHotspotId,
 } from './galaxyConfig';
+import RendererDiagnostics from './rendering/RendererDiagnostics';
+import { detectGalaxyRendererCapabilities } from './rendering/rendererCapabilities';
 import styles from './GalaxyBackground.module.css';
 
 type QualityLevel = 'low' | 'balanced' | 'high';
@@ -35,7 +37,7 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v2.6.2-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 function cinematicTimeWarp(t: number) {
@@ -101,17 +103,6 @@ function detectInitialQuality(): { quality: QualityLevel; maxDpr: number } {
   }
 
   return { quality: 'balanced', maxDpr: 1.2 };
-}
-
-function hasWebGLSupport() {
-  if (typeof document === 'undefined') return true;
-
-  try {
-    const canvas = document.createElement('canvas');
-    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
-  } catch {
-    return false;
-  }
 }
 
 function useGlobalPointer() {
@@ -391,7 +382,7 @@ export default function GalaxyBackground() {
   const pageVisible = usePageVisibility();
   const pointerRef = useGlobalPointer();
   const initialQuality = useMemo(() => detectInitialQuality(), []);
-  const webglSupported = useMemo(() => hasWebGLSupport(), []);
+  const rendererCapabilities = useMemo(() => detectGalaxyRendererCapabilities(), []);
   const interactionRef = useRef<InteractionState>({
     yaw: DEFAULT_CAMERA.yaw,
     pitch: DEFAULT_CAMERA.pitch,
@@ -545,10 +536,11 @@ export default function GalaxyBackground() {
     setExplorationEnabled(!explorationEnabled);
   };
 
-  if (!webglSupported) {
+  if (!rendererCapabilities.webgl2Available) {
     return (
       <div className={styles.webglFallback} role="img" aria-label="Fondo espacial estático. WebGL no está disponible en este dispositivo.">
         <span className={styles.webglFallbackStar} aria-hidden="true" />
+        <RendererDiagnostics />
       </div>
     );
   }
@@ -622,6 +614,8 @@ export default function GalaxyBackground() {
           onTogglePresentation={togglePresentation}
         />
       </div>
+
+      <RendererDiagnostics />
     </>
   );
 }

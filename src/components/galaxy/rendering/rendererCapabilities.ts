@@ -1,0 +1,44 @@
+'use client';
+
+export type GalaxyRendererBackend = 'webgpu' | 'webgl2' | 'none';
+
+export type GalaxyRendererCapabilities = {
+  preferredBackend: GalaxyRendererBackend;
+  webgpuAvailable: boolean;
+  webgl2Available: boolean;
+  legacyShaderCompatible: boolean;
+};
+
+function hasWebGL2() {
+  if (typeof document === 'undefined') return true;
+
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2'));
+  } catch {
+    return false;
+  }
+}
+
+function hasWebGPU() {
+  if (typeof navigator === 'undefined') return false;
+  return 'gpu' in navigator && Boolean((navigator as Navigator & { gpu?: unknown }).gpu);
+}
+
+/**
+ * V3.0 deliberately keeps the production scene on WebGL2 while the legacy
+ * ShaderMaterial layers are migrated to TSL. WebGPURenderer does not accept
+ * those custom GLSL materials, so switching renderer early would break the
+ * galaxy instead of evolving it.
+ */
+export function detectGalaxyRendererCapabilities(): GalaxyRendererCapabilities {
+  const webgpuAvailable = hasWebGPU();
+  const webgl2Available = hasWebGL2();
+
+  return {
+    preferredBackend: webgpuAvailable ? 'webgpu' : webgl2Available ? 'webgl2' : 'none',
+    webgpuAvailable,
+    webgl2Available,
+    legacyShaderCompatible: webgl2Available,
+  };
+}

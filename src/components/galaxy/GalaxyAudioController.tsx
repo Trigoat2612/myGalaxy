@@ -5,15 +5,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './GalaxyBackground.module.css';
 
 const AUDIO_URL = '/audio/galaxy-ambient.mp3';
-const AUDIO_ENABLED_KEY = 'galaxy-audio-v2.6.2-enabled';
-const AUDIO_VOLUME_KEY = 'galaxy-audio-v2.6.2-volume';
+const AUDIO_ENABLED_KEY = 'galaxy-audio-v3.1-enabled';
+const AUDIO_VOLUME_KEY = 'galaxy-audio-v3.1-volume';
 const LEGACY_ENABLED_KEYS = [
+  'galaxy-audio-v2.6.2-enabled',
   'galaxy-audio-v2.6.1-enabled',
   'galaxy-audio-v2.5.2-enabled',
   'galaxy-audio-v2.5.1-enabled',
   'galaxy-audio-v2.5-enabled',
 ];
 const LEGACY_VOLUME_KEYS = [
+  'galaxy-audio-v2.6.2-volume',
   'galaxy-audio-v2.6.1-volume',
   'galaxy-audio-v2.5.2-volume',
   'galaxy-audio-v2.5.1-volume',
