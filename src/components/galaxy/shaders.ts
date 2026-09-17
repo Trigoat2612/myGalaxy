@@ -2,6 +2,7 @@ export const galaxyVertexShader = /* glsl */ `
   uniform float uTime;
   uniform float uPixelRatio;
   uniform float uPointSize;
+  uniform float uZoomDetail;
 
   attribute vec3 color;
   attribute float aScale;
@@ -36,7 +37,7 @@ export const galaxyVertexShader = /* glsl */ `
 
     gl_PointSize = max(
       0.9,
-      aScale * uPointSize * uPixelRatio * perspective * twinkle
+      aScale * uPointSize * uPixelRatio * perspective * twinkle * mix(1.0, 0.72, uZoomDetail)
     );
 
     vColor = color;
@@ -48,6 +49,7 @@ export const galaxyVertexShader = /* glsl */ `
 export const galaxyFragmentShader = /* glsl */ `
   uniform float uOpacity;
   uniform float uDust;
+  uniform float uZoomDetail;
 
   varying vec3 vColor;
   varying float vTwinkle;
@@ -59,12 +61,22 @@ export const galaxyFragmentShader = /* glsl */ `
 
     if (distanceToCenter > 0.5) discard;
 
-    float core = 1.0 - smoothstep(0.0, 0.082, distanceToCenter);
-    float midGlow = 1.0 - smoothstep(0.02, 0.24, distanceToCenter);
-    float halo = 1.0 - smoothstep(0.16, 0.5, distanceToCenter);
+    float coreEdge = mix(0.082, 0.058, uZoomDetail);
+    float midEdge = mix(0.24, 0.19, uZoomDetail);
+    float haloStart = mix(0.16, 0.20, uZoomDetail);
 
-    float alpha = (halo * 0.28 + midGlow * 0.4 + core * 0.5) * uOpacity * vOpacity;
-    vec3 finalColor = vColor * (0.94 + core * 0.65 + midGlow * 0.1) * (0.97 + vTwinkle * 0.03);
+    float core = 1.0 - smoothstep(0.0, coreEdge, distanceToCenter);
+    float midGlow = 1.0 - smoothstep(0.02, midEdge, distanceToCenter);
+    float halo = 1.0 - smoothstep(haloStart, 0.5, distanceToCenter);
+
+    float haloWeight = mix(0.28, 0.15, uZoomDetail);
+    float midWeight = mix(0.40, 0.32, uZoomDetail);
+    float coreWeight = mix(0.50, 0.62, uZoomDetail);
+
+    float alpha = (halo * haloWeight + midGlow * midWeight + core * coreWeight) * uOpacity * vOpacity;
+    vec3 finalColor = vColor *
+      (0.94 + core * mix(0.65, 0.92, uZoomDetail) + midGlow * 0.1) *
+      (0.97 + vTwinkle * 0.03);
 
     if (uDust > 0.5) {
       alpha *= 0.5;

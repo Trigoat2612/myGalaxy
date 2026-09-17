@@ -832,3 +832,31 @@
     font-size: 0.69rem;
   }
 }
+
+
+/* =========================================================
+   V3.1.6 · HOTSPOTS COMPACTOS EN MÓVIL
+   Reduce etiquetas 3D para zoom profundo.
+   ========================================================= */
+
+@media (max-width: 720px) {
+  .hotspotLabel {
+    padding: 3px 6px;
+    border-radius: 999px;
+    font-size: 8px;
+    letter-spacing: 0.015em;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+  }
+
+  .hotspotLabelActive {
+    border-color: rgba(255, 226, 179, 0.32);
+  }
+}
+
+@media (max-width: 430px) {
+  .hotspotLabel {
+    padding: 2px 5px;
+    font-size: 7px;
+  }
+}

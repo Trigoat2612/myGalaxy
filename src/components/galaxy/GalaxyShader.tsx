@@ -9,6 +9,8 @@ import GalacticCore from './GalacticCore';
 import StarClusters from './StarClusters';
 import GalaxyHotspots from './GalaxyHotspots';
 import type { GalaxyHotspotId } from './galaxyConfig';
+import type { InteractionState } from './InteractionController';
+import type { RefObject } from 'react';
 import { galaxyFragmentShader, galaxyVertexShader } from './shaders';
 
 type GalaxyData = {
@@ -165,10 +167,12 @@ function ShaderPoints({
   count,
   dust = false,
   animate,
+  interactionRef,
 }: {
   count: number;
   dust?: boolean;
   animate: boolean;
+  interactionRef: RefObject<InteractionState>;
 }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const gl = useThree((state) => state.gl);
@@ -181,6 +185,7 @@ function ShaderPoints({
       uPointSize: { value: dust ? 4.6 : 4.4 },
       uOpacity: { value: dust ? 0.10 : 0.94 },
       uDust: { value: dust ? 1 : 0 },
+      uZoomDetail: { value: 0 },
     }),
     [dust],
   );
@@ -193,6 +198,10 @@ function ShaderPoints({
 
     material.uniforms.uTime.value = animate ? state.clock.elapsedTime : 0;
     material.uniforms.uPixelRatio.value = gl.getPixelRatio();
+
+    const zoom = interactionRef.current?.zoom ?? 21.5;
+    const zoomDetail = THREE.MathUtils.clamp((12 - zoom) / 6.5, 0, 1);
+    material.uniforms.uZoomDetail.value = dust ? zoomDetail * 0.35 : zoomDetail;
   });
 
   return (
@@ -228,6 +237,7 @@ export default function GalaxyShader({
   explorationEnabled,
   selectedHotspot,
   onSelectHotspot,
+  interactionRef,
 }: {
   stars: number;
   dust: number;
@@ -235,14 +245,15 @@ export default function GalaxyShader({
   explorationEnabled: boolean;
   selectedHotspot: GalaxyHotspotId | null;
   onSelectHotspot: (id: GalaxyHotspotId) => void;
+  interactionRef: RefObject<InteractionState>;
 }) {
   return (
     <group rotation={[0.72, 0.04, -0.18]} scale={[1.26, 1.0, 0.74]} position={[0.08, -0.18, 0]}>
       <GalaxyDisc animate={animate} />
       <GalacticCore animate={animate} />
-      <ShaderPoints count={stars} animate={animate} />
-      <StarClusters count={Math.max(260, Math.round(stars * 0.034))} animate={animate} />
-      <ShaderPoints count={dust} dust animate={animate} />
+      <ShaderPoints count={stars} animate={animate} interactionRef={interactionRef} />
+      <StarClusters count={Math.max(260, Math.round(stars * 0.034))} animate={animate} interactionRef={interactionRef} />
+      <ShaderPoints count={dust} dust animate={animate} interactionRef={interactionRef} />
       <GalaxyHotspots
         enabled={explorationEnabled}
         selected={selectedHotspot}

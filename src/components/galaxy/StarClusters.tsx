@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { galaxyFragmentShader, galaxyVertexShader } from './shaders';
+import type { InteractionState } from './InteractionController';
 
 function createRandom(seed = 44017) {
   return () => {
@@ -22,9 +23,11 @@ function signedNoise(random: () => number) {
 export default function StarClusters({
   count,
   animate,
+  interactionRef,
 }: {
   count: number;
   animate: boolean;
+  interactionRef: RefObject<InteractionState>;
 }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const gl = useThree((state) => state.gl);
@@ -102,6 +105,7 @@ export default function StarClusters({
       uPointSize: { value: 4.15 },
       uOpacity: { value: 0.72 },
       uDust: { value: 0 },
+      uZoomDetail: { value: 0 },
     }),
     [],
   );
@@ -112,6 +116,9 @@ export default function StarClusters({
     if (!materialRef.current) return;
     materialRef.current.uniforms.uTime.value = animate ? state.clock.elapsedTime : 0;
     materialRef.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
+
+    const zoom = interactionRef.current?.zoom ?? 21.5;
+    materialRef.current.uniforms.uZoomDetail.value = THREE.MathUtils.clamp((12 - zoom) / 6.5, 0, 1);
   });
 
   return (

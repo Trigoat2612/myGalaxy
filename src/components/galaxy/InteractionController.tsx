@@ -23,7 +23,8 @@ type ActivePointer = {
 };
 
 const MOBILE_BREAKPOINT = 640;
-const MIN_ZOOM = 8.2;
+const DESKTOP_MIN_ZOOM = 5.5;
+const MOBILE_MIN_ZOOM = 3.8;
 const DESKTOP_MAX_ZOOM = 19.5;
 const MOBILE_MAX_ZOOM = 27;
 
@@ -43,7 +44,9 @@ export default function InteractionController({
 
   useEffect(() => {
     const element = gl.domElement;
-    const maxZoom = width < MOBILE_BREAKPOINT ? MOBILE_MAX_ZOOM : DESKTOP_MAX_ZOOM;
+    const isMobile = width < MOBILE_BREAKPOINT;
+    const minZoom = isMobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
+    const maxZoom = isMobile ? MOBILE_MAX_ZOOM : DESKTOP_MAX_ZOOM;
     const activePointers = new Map<number, ActivePointer>();
 
     let dragging = false;
@@ -128,7 +131,7 @@ export default function InteractionController({
         const scale = distance / pinchStartDistance;
         interaction.targetZoom = THREE.MathUtils.clamp(
           pinchStartZoom / scale,
-          MIN_ZOOM,
+          minZoom,
           maxZoom,
         );
         return;
@@ -186,7 +189,7 @@ export default function InteractionController({
       event.preventDefault();
       interaction.targetZoom = THREE.MathUtils.clamp(
         interaction.targetZoom + event.deltaY * 0.008,
-        MIN_ZOOM,
+        minZoom,
         maxZoom,
       );
     };
@@ -216,16 +219,16 @@ export default function InteractionController({
           break;
         case '+':
         case '=':
-          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom - 0.8, MIN_ZOOM, maxZoom);
+          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom - 0.8, minZoom, maxZoom);
           break;
         case '-':
         case '_':
-          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom + 0.8, MIN_ZOOM, maxZoom);
+          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom + 0.8, minZoom, maxZoom);
           break;
         case 'Home':
           interaction.targetYaw = DEFAULT_CAMERA.yaw;
           interaction.targetPitch = DEFAULT_CAMERA.pitch;
-          interaction.targetZoom = THREE.MathUtils.clamp(DEFAULT_CAMERA.zoom, MIN_ZOOM, maxZoom);
+          interaction.targetZoom = THREE.MathUtils.clamp(DEFAULT_CAMERA.zoom, minZoom, maxZoom);
           break;
         default:
           handled = false;

@@ -37,7 +37,7 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1.4-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1.6-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 const MOBILE_BREAKPOINT = 640;
@@ -145,6 +145,48 @@ function useGlobalPointer() {
   }, []);
 
   return pointerRef;
+}
+
+function AdaptiveSharpnessController({
+  interactionRef,
+  explorationEnabled,
+  quality,
+  baseDpr,
+}: {
+  interactionRef: RefObject<InteractionState>;
+  explorationEnabled: boolean;
+  quality: QualityLevel;
+  baseDpr: number;
+}) {
+  const { size, setDpr } = useThree();
+  const lastDprRef = useRef(baseDpr);
+
+  useFrame(() => {
+    if (size.width >= MOBILE_BREAKPOINT) return;
+
+    const zoom = interactionRef.current?.zoom ?? MOBILE_CAMERA_ZOOM;
+    const zoomDetail = explorationEnabled
+      ? THREE.MathUtils.clamp((12 - zoom) / 6.5, 0, 1)
+      : 0;
+
+    const hardwareCap = quality === 'high' ? 1.7 : quality === 'balanced' ? 1.55 : 1.35;
+    const deviceDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    const targetDpr = Math.min(
+      deviceDpr,
+      hardwareCap,
+      THREE.MathUtils.lerp(Math.max(1, baseDpr), hardwareCap, zoomDetail),
+    );
+
+    if (Math.abs(targetDpr - lastDprRef.current) < 0.035) return;
+    lastDprRef.current = targetDpr;
+    setDpr(targetDpr);
+  });
+
+  useEffect(() => {
+    return () => setDpr(baseDpr);
+  }, [baseDpr, setDpr]);
+
+  return null;
 }
 
 function CameraRig({
@@ -349,6 +391,7 @@ function ResponsiveScene({
   onSelectHotspot,
   onCinematicProgress,
   onCinematicComplete,
+  maxDpr,
 }: {
   quality: QualityLevel;
   animate: boolean;
@@ -361,6 +404,7 @@ function ResponsiveScene({
   onSelectHotspot: (id: GalaxyHotspotId) => void;
   onCinematicProgress: (progress: number, stage: CinematicStage) => void;
   onCinematicComplete: () => void;
+  maxDpr: number;
 }) {
   const { size } = useThree();
   const counts = getSceneCounts(size.width, quality);
@@ -374,6 +418,12 @@ function ResponsiveScene({
 
   return (
     <>
+      <AdaptiveSharpnessController
+        interactionRef={interactionRef}
+        explorationEnabled={explorationEnabled && !introActive}
+        quality={quality}
+        baseDpr={maxDpr}
+      />
       <InteractionController enabled={explorationEnabled && !introActive} interactionRef={interactionRef} />
       <CameraRig
         pointerRef={pointerRef}
@@ -396,6 +446,7 @@ function ResponsiveScene({
             explorationEnabled={explorationEnabled && !introActive}
             selectedHotspot={selectedHotspot}
             onSelectHotspot={onSelectHotspot}
+            interactionRef={interactionRef}
           />
         </group>
       )}
@@ -617,6 +668,7 @@ export default function GalaxyBackground() {
               onSelectHotspot={(id) => manualSelectHotspot(id)}
               onCinematicProgress={handleCinematicProgress}
               onCinematicComplete={finishCinematic}
+              maxDpr={maxDpr}
             />
           </PerformanceMonitor>
         </Canvas>

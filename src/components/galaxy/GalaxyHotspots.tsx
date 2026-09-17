@@ -1,7 +1,7 @@
 'use client';
 
 import { Billboard, Html } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
@@ -357,12 +357,14 @@ function Hotspot({
   position,
   selected,
   onSelect,
+  compact,
 }: {
   id: GalaxyHotspotId;
   label: string;
   position: [number, number, number];
   selected: boolean;
   onSelect: (id: GalaxyHotspotId) => void;
+  compact: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -395,7 +397,7 @@ function Hotspot({
       <Html
         center
         position={[0, 0.5, 0]}
-        distanceFactor={11}
+        distanceFactor={compact ? 6.4 : 11}
         zIndexRange={[12, 0]}
         style={{ pointerEvents: 'none' }}
       >
@@ -416,6 +418,9 @@ export default function GalaxyHotspots({
   selected: GalaxyHotspotId | null;
   onSelect: (id: GalaxyHotspotId) => void;
 }) {
+  const width = useThree((state) => state.size.width);
+  const compact = width < 640;
+
   if (!enabled) return null;
 
   return (
@@ -428,6 +433,7 @@ export default function GalaxyHotspots({
           position={hotspot.position}
           selected={selected === hotspot.id}
           onSelect={onSelect}
+          compact={compact}
         />
       ))}
     </group>
