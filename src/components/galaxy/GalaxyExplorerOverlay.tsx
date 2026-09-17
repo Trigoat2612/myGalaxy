@@ -57,7 +57,7 @@ export default function GalaxyExplorerOverlay({
 
           <p>
             {activeHotspot?.description ??
-              'Arrastra para orbitar, usa la rueda para acercarte y selecciona una región.'}
+              'Arrastra para orbitar, usa la rueda o pellizca con dos dedos para hacer zoom y selecciona una región.'}
           </p>
 
           <div className={styles.regionButtons} aria-label="Regiones galácticas">

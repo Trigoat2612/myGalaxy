@@ -494,11 +494,16 @@ body.galaxy-exploring {
 body.galaxy-exploring .content {
   pointer-events: none;
 
-  opacity: 0.14;
+  opacity: 0;
+  visibility: hidden;
 
-  filter: blur(1.5px);
+  filter: none;
 
   user-select: none;
+}
+
+body:not(.galaxy-exploring) .content {
+  visibility: visible;
 }
 
 /* =========================================================

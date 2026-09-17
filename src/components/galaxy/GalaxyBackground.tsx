@@ -37,8 +37,24 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1.4-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
+
+const MOBILE_BREAKPOINT = 640;
+const MOBILE_CAMERA_ZOOM = 21.5;
+const MOBILE_CAMERA_FOV = 54;
+const MOBILE_GALAXY_SCALE = 0.40;
+
+function getViewportDefaultZoom() {
+  if (typeof window === 'undefined') return DEFAULT_CAMERA.zoom;
+  return window.innerWidth < MOBILE_BREAKPOINT ? MOBILE_CAMERA_ZOOM : DEFAULT_CAMERA.zoom;
+}
+
+function getResponsiveGalaxyScale(width: number) {
+  if (width < 430) return 0.36;
+  if (width < MOBILE_BREAKPOINT) return MOBILE_GALAXY_SCALE;
+  return 1;
+}
 
 function cinematicTimeWarp(t: number) {
   // Keep the flight almost linear, but soften only the start/end enough to
@@ -150,7 +166,15 @@ function CameraRig({
   onCinematicProgress: (progress: number, stage: CinematicStage) => void;
   onCinematicComplete: () => void;
 }) {
-  const camera = useThree((state) => state.camera);
+  const { camera, size } = useThree();
+  const baseZoom = size.width < MOBILE_BREAKPOINT ? MOBILE_CAMERA_ZOOM : DEFAULT_CAMERA.zoom;
+  const baseFov = size.width < MOBILE_BREAKPOINT ? MOBILE_CAMERA_FOV : 40;
+  useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    camera.fov = baseFov;
+    camera.updateProjectionMatrix();
+  }, [baseFov, camera]);
+
   const currentTargetRef = useRef(new THREE.Vector3(...DEFAULT_CAMERA.target));
   const lastReportedStageRef = useRef<CinematicStage>('loading');
   const lastReportedBucketRef = useRef(-1);
@@ -162,9 +186,9 @@ function CameraRig({
     const cosPitch = Math.cos(DEFAULT_CAMERA.pitch);
     const finalPosition = target.clone().add(
       new THREE.Vector3(
-        Math.sin(DEFAULT_CAMERA.yaw) * cosPitch * DEFAULT_CAMERA.zoom,
-        Math.sin(DEFAULT_CAMERA.pitch) * DEFAULT_CAMERA.zoom,
-        Math.cos(DEFAULT_CAMERA.yaw) * cosPitch * DEFAULT_CAMERA.zoom,
+        Math.sin(DEFAULT_CAMERA.yaw) * cosPitch * baseZoom,
+        Math.sin(DEFAULT_CAMERA.pitch) * baseZoom,
+        Math.cos(DEFAULT_CAMERA.yaw) * cosPitch * baseZoom,
       ),
     );
 
@@ -176,7 +200,7 @@ function CameraRig({
       new THREE.Vector3(0.18, 0.35, 2.5),
       finalPosition,
     );
-  }, []);
+  }, [baseZoom]);
 
   const cinematicTargetCurve = useMemo(
     () =>
@@ -235,10 +259,10 @@ function CameraRig({
         cinematic.stage = 'complete';
         interaction.yaw = DEFAULT_CAMERA.yaw;
         interaction.pitch = DEFAULT_CAMERA.pitch;
-        interaction.zoom = DEFAULT_CAMERA.zoom;
+        interaction.zoom = baseZoom;
         interaction.targetYaw = DEFAULT_CAMERA.yaw;
         interaction.targetPitch = DEFAULT_CAMERA.pitch;
-        interaction.targetZoom = DEFAULT_CAMERA.zoom;
+        interaction.targetZoom = baseZoom;
         onCinematicComplete();
       }
       return;
@@ -268,7 +292,7 @@ function CameraRig({
       const idleYaw = animate ? Math.sin(state.clock.elapsedTime * 0.05) * 0.0025 : 0;
       desiredYaw = pointer.x * 0.011 + idleYaw;
       desiredPitch = DEFAULT_CAMERA.pitch - pointer.y * 0.006;
-      desiredZoom = DEFAULT_CAMERA.zoom + (animate ? Math.cos(state.clock.elapsedTime * 0.035) * 0.03 : 0);
+      desiredZoom = baseZoom + (animate ? Math.cos(state.clock.elapsedTime * 0.035) * 0.03 : 0);
     }
 
     const orbitEasing = 1 - Math.exp(-delta * 3.0);
@@ -340,6 +364,7 @@ function ResponsiveScene({
 }) {
   const { size } = useThree();
   const counts = getSceneCounts(size.width, quality);
+  const galaxyScale = getResponsiveGalaxyScale(size.width);
   const introActive = cinematicRef.current?.active ?? false;
 
   const showDepth = !introActive || cinematicStage !== 'loading';
@@ -363,14 +388,16 @@ function ResponsiveScene({
       {showNebula && <NebulaShader animate={animate} opacity={counts.nebula} />}
       {showDepth && <DepthStarLayers count={counts.background} animate={animate} pointerRef={pointerRef} />}
       {showGalaxy && (
-        <GalaxyShader
-          stars={counts.galaxy}
-          dust={counts.dust}
-          animate={animate}
-          explorationEnabled={explorationEnabled && !introActive}
-          selectedHotspot={selectedHotspot}
-          onSelectHotspot={onSelectHotspot}
-        />
+        <group scale={galaxyScale}>
+          <GalaxyShader
+            stars={counts.galaxy}
+            dust={counts.dust}
+            animate={animate}
+            explorationEnabled={explorationEnabled && !introActive}
+            selectedHotspot={selectedHotspot}
+            onSelectHotspot={onSelectHotspot}
+          />
+        </group>
       )}
       {showShooting && <ShootingStars count={counts.shooting} animate={animate} />}
     </>
@@ -383,13 +410,14 @@ export default function GalaxyBackground() {
   const pointerRef = useGlobalPointer();
   const initialQuality = useMemo(() => detectInitialQuality(), []);
   const rendererCapabilities = useMemo(() => detectGalaxyRendererCapabilities(), []);
+  const initialViewportZoom = useMemo(() => getViewportDefaultZoom(), []);
   const interactionRef = useRef<InteractionState>({
     yaw: DEFAULT_CAMERA.yaw,
     pitch: DEFAULT_CAMERA.pitch,
-    zoom: DEFAULT_CAMERA.zoom,
+    zoom: initialViewportZoom,
     targetYaw: DEFAULT_CAMERA.yaw,
     targetPitch: DEFAULT_CAMERA.pitch,
-    targetZoom: DEFAULT_CAMERA.zoom,
+    targetZoom: initialViewportZoom,
   });
   const cinematicRef = useRef<CinematicRuntime>({
     active: false,
@@ -465,10 +493,11 @@ export default function GalaxyBackground() {
     const interaction = interactionRef.current;
     interaction.yaw = DEFAULT_CAMERA.yaw;
     interaction.pitch = DEFAULT_CAMERA.pitch;
-    interaction.zoom = DEFAULT_CAMERA.zoom;
+    const defaultZoom = getViewportDefaultZoom();
+    interaction.zoom = defaultZoom;
     interaction.targetYaw = DEFAULT_CAMERA.yaw;
     interaction.targetPitch = DEFAULT_CAMERA.pitch;
-    interaction.targetZoom = DEFAULT_CAMERA.zoom;
+    interaction.targetZoom = defaultZoom;
     finishCinematic();
   };
 
@@ -479,9 +508,10 @@ export default function GalaxyBackground() {
 
   const resetCamera = useCallback(() => {
     const interaction = interactionRef.current;
+    const defaultZoom = getViewportDefaultZoom();
     interaction.targetYaw = DEFAULT_CAMERA.yaw;
     interaction.targetPitch = DEFAULT_CAMERA.pitch;
-    interaction.targetZoom = DEFAULT_CAMERA.zoom;
+    interaction.targetZoom = defaultZoom;
     setSelectedHotspot(null);
   }, []);
 
@@ -492,8 +522,8 @@ export default function GalaxyBackground() {
     interaction.targetYaw = 0;
     interaction.targetPitch = DEFAULT_CAMERA.pitch;
     interaction.targetZoom = id
-      ? GALAXY_HOTSPOTS.find((item) => item.id === id)?.zoom ?? DEFAULT_CAMERA.zoom
-      : DEFAULT_CAMERA.zoom;
+      ? GALAXY_HOTSPOTS.find((item) => item.id === id)?.zoom ?? getViewportDefaultZoom()
+      : getViewportDefaultZoom();
   }, []);
 
   useEffect(() => {
@@ -555,8 +585,10 @@ export default function GalaxyBackground() {
           frameloop={!pageVisible ? 'never' : reducedMotion ? 'demand' : 'always'}
           dpr={[1, maxDpr]}
           camera={{
-            position: cinematicActive ? [-1.35, 3.75, 24.8] : [0.15, 1.58, 15.75],
-            fov: 40,
+            position: cinematicActive
+              ? [-1.35, 3.75, 24.8]
+              : [0.15, Math.sin(DEFAULT_CAMERA.pitch) * initialViewportZoom, Math.cos(DEFAULT_CAMERA.pitch) * initialViewportZoom],
+            fov: typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT ? MOBILE_CAMERA_FOV : 40,
             near: 0.1,
             far: 140,
           }}

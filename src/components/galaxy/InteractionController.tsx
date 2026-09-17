@@ -15,8 +15,21 @@ export type InteractionState = {
   targetZoom: number;
 };
 
+type ActivePointer = {
+  id: number;
+  x: number;
+  y: number;
+  pointerType: string;
+};
+
+const MOBILE_BREAKPOINT = 640;
 const MIN_ZOOM = 8.2;
-const MAX_ZOOM = 19.5;
+const DESKTOP_MAX_ZOOM = 19.5;
+const MOBILE_MAX_ZOOM = 27;
+
+function getPointerDistance(a: ActivePointer, b: ActivePointer) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
 
 export default function InteractionController({
   enabled,
@@ -26,26 +39,102 @@ export default function InteractionController({
   interactionRef: RefObject<InteractionState>;
 }) {
   const gl = useThree((state) => state.gl);
+  const width = useThree((state) => state.size.width);
 
   useEffect(() => {
     const element = gl.domElement;
+    const maxZoom = width < MOBILE_BREAKPOINT ? MOBILE_MAX_ZOOM : DESKTOP_MAX_ZOOM;
+    const activePointers = new Map<number, ActivePointer>();
+
     let dragging = false;
+    let dragPointerId: number | null = null;
     let previousX = 0;
     let previousY = 0;
 
-    const onPointerDown = (event: PointerEvent) => {
-      if (!enabled || event.button !== 0) return;
-      dragging = true;
-      previousX = event.clientX;
-      previousY = event.clientY;
-      element.setPointerCapture?.(event.pointerId);
+    let pinchStartDistance = 0;
+    let pinchStartZoom = 0;
+
+    const getTouchPointers = () =>
+      Array.from(activePointers.values()).filter((pointer) => pointer.pointerType === 'touch');
+
+    const beginPinch = () => {
+      const touches = getTouchPointers();
+      const interaction = interactionRef.current;
+      if (!interaction || touches.length < 2) return;
+
+      pinchStartDistance = Math.max(1, getPointerDistance(touches[0], touches[1]));
+      pinchStartZoom = interaction.targetZoom;
+      dragging = false;
+      dragPointerId = null;
       element.style.cursor = 'grabbing';
     };
 
+    const beginSinglePointerDrag = (pointer: ActivePointer) => {
+      dragging = true;
+      dragPointerId = pointer.id;
+      previousX = pointer.x;
+      previousY = pointer.y;
+      pinchStartDistance = 0;
+      element.style.cursor = 'grabbing';
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!enabled || (event.pointerType === 'mouse' && event.button !== 0)) return;
+
+      const pointer: ActivePointer = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        pointerType: event.pointerType,
+      };
+
+      activePointers.set(event.pointerId, pointer);
+      element.setPointerCapture?.(event.pointerId);
+
+      const touches = getTouchPointers();
+      if (touches.length >= 2) {
+        beginPinch();
+        return;
+      }
+
+      beginSinglePointerDrag(pointer);
+    };
+
     const onPointerMove = (event: PointerEvent) => {
-      if (!enabled || !dragging) return;
+      if (!enabled) return;
+
+      const storedPointer = activePointers.get(event.pointerId);
+      if (storedPointer) {
+        storedPointer.x = event.clientX;
+        storedPointer.y = event.clientY;
+      }
+
       const interaction = interactionRef.current;
       if (!interaction) return;
+
+      const touches = getTouchPointers();
+
+      // Two-finger pinch zoom on touch devices. Increasing the distance between
+      // fingers moves the camera closer (smaller orbit radius), while closing
+      // the fingers moves it farther away.
+      if (touches.length >= 2) {
+        const distance = Math.max(1, getPointerDistance(touches[0], touches[1]));
+
+        if (pinchStartDistance <= 0) {
+          beginPinch();
+          return;
+        }
+
+        const scale = distance / pinchStartDistance;
+        interaction.targetZoom = THREE.MathUtils.clamp(
+          pinchStartZoom / scale,
+          MIN_ZOOM,
+          maxZoom,
+        );
+        return;
+      }
+
+      if (!dragging || dragPointerId !== event.pointerId) return;
 
       const dx = event.clientX - previousX;
       const dy = event.clientY - previousY;
@@ -64,10 +153,28 @@ export default function InteractionController({
       );
     };
 
-    const stopDragging = (event: PointerEvent) => {
-      if (!dragging) return;
-      dragging = false;
+    const stopPointer = (event: PointerEvent) => {
+      if (!activePointers.has(event.pointerId)) return;
+
+      activePointers.delete(event.pointerId);
       element.releasePointerCapture?.(event.pointerId);
+
+      const touches = getTouchPointers();
+
+      if (touches.length >= 2) {
+        beginPinch();
+        return;
+      }
+
+      if (activePointers.size === 1) {
+        const remaining = Array.from(activePointers.values())[0];
+        beginSinglePointerDrag(remaining);
+        return;
+      }
+
+      dragging = false;
+      dragPointerId = null;
+      pinchStartDistance = 0;
       element.style.cursor = enabled ? 'grab' : '';
     };
 
@@ -80,7 +187,7 @@ export default function InteractionController({
       interaction.targetZoom = THREE.MathUtils.clamp(
         interaction.targetZoom + event.deltaY * 0.008,
         MIN_ZOOM,
-        MAX_ZOOM,
+        maxZoom,
       );
     };
 
@@ -109,16 +216,16 @@ export default function InteractionController({
           break;
         case '+':
         case '=':
-          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom - 0.8, MIN_ZOOM, MAX_ZOOM);
+          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom - 0.8, MIN_ZOOM, maxZoom);
           break;
         case '-':
         case '_':
-          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom + 0.8, MIN_ZOOM, MAX_ZOOM);
+          interaction.targetZoom = THREE.MathUtils.clamp(interaction.targetZoom + 0.8, MIN_ZOOM, maxZoom);
           break;
         case 'Home':
           interaction.targetYaw = DEFAULT_CAMERA.yaw;
           interaction.targetPitch = DEFAULT_CAMERA.pitch;
-          interaction.targetZoom = DEFAULT_CAMERA.zoom;
+          interaction.targetZoom = THREE.MathUtils.clamp(DEFAULT_CAMERA.zoom, MIN_ZOOM, maxZoom);
           break;
         default:
           handled = false;
@@ -132,22 +239,23 @@ export default function InteractionController({
 
     element.addEventListener('pointerdown', onPointerDown);
     element.addEventListener('pointermove', onPointerMove);
-    element.addEventListener('pointerup', stopDragging);
-    element.addEventListener('pointercancel', stopDragging);
+    element.addEventListener('pointerup', stopPointer);
+    element.addEventListener('pointercancel', stopPointer);
     element.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
       element.style.cursor = '';
       element.style.touchAction = '';
+      activePointers.clear();
       element.removeEventListener('pointerdown', onPointerDown);
       element.removeEventListener('pointermove', onPointerMove);
-      element.removeEventListener('pointerup', stopDragging);
-      element.removeEventListener('pointercancel', stopDragging);
+      element.removeEventListener('pointerup', stopPointer);
+      element.removeEventListener('pointercancel', stopPointer);
       element.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [enabled, gl, interactionRef]);
+  }, [enabled, gl, interactionRef, width]);
 
   return null;
 }

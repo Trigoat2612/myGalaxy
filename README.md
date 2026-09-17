@@ -1,8 +1,8 @@
-# Galaxia Responsive V3.1.1 — GPU Particle Engine / Mobile Explorer Fix
+# Galaxia Responsive V3.1.4 — GPU Particle Engine / Mobile Explorer Fix
 
 V3.1 mantiene la experiencia principal sobre WebGL2 para no romper las capas GLSL todavía activas, pero incorpora un laboratorio WebGPU + TSL real y ejecutable.
 
-## V3.1.1 · Ajuste móvil
+## V3.1.4 · Ajuste móvil
 
 El panel de exploración se compactó en pantallas de hasta 720px:
 
@@ -86,3 +86,30 @@ Luego comprobar:
 4. El movimiento del mouse produce parallax suave.
 5. Cambiar de pestaña pausa el render del laboratorio.
 6. Volver a `/` mantiene audio, cinemática y exploración.
+
+
+## V3.1.4 · Mobile Full Galaxy View
+
+- FOV móvil ampliado a 56°.
+- Zoom general móvil aumentado a 22.5.
+- Escala de la galaxia adaptativa: 0.30 en móviles pequeños y 0.33 hasta 639 px.
+- El disco completo entra mejor en formato vertical sin afectar desktop/tablet.
+- Reset, fin de cinemática y vista general usan el zoom responsive correcto.
+
+
+## V3.1.4 · Mobile framing refinement
+
+- Mobile general camera: zoom 21.5, FOV 54.
+- Main galaxy scale: 0.36 below 430px and 0.40 from 430px to 639px.
+- Keeps the full disk visible while using more of the portrait viewport.
+- When exploration mode is active, the regular page content is fully hidden instead of remaining translucent.
+- Exploration overlay, audio controls and galaxy remain visible.
+
+
+## V3.1.4 - Mobile Pinch Zoom
+
+- Zoom táctil con gesto de pellizco usando dos dedos en modo exploración.
+- Un dedo conserva la órbita/drag existente.
+- Zoom móvil continuo entre 8.2 y 27 unidades de cámara.
+- La rueda de mouse y controles de teclado permanecen disponibles en escritorio.
+- General y Restablecer continúan devolviendo el encuadre móvil base.
