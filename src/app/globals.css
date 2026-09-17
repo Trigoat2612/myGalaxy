@@ -27,61 +27,98 @@ a {
   font: inherit;
 }
 
+/* =========================================================
+   CONTENIDO PRINCIPAL
+   ========================================================= */
+
 .content {
   position: relative;
   z-index: 1;
+
   min-height: 150svh;
+
   display: flex;
   flex-direction: column;
   align-items: center;
+
   padding: 24px;
+
+  transition:
+    opacity 220ms ease,
+    filter 220ms ease;
 }
 
+/* =========================================================
+   HERO
+   ========================================================= */
+
 .hero {
+  position: relative;
+
   width: min(900px, 100%);
   min-height: 100svh;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  text-align: center;
+
   padding: 80px 44px;
-  position: relative;
+
+  text-align: center;
 }
 
 .hero::before {
   content: '';
+
   position: absolute;
   z-index: -1;
+
   width: min(760px, 92vw);
   height: 390px;
+
   border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(2, 4, 13, 0.12) 0%,
-    rgba(2, 4, 13, 0.07) 48%,
-    transparent 76%
-  );
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(2, 4, 13, 0.12) 0%,
+      rgba(2, 4, 13, 0.07) 48%,
+      transparent 76%
+    );
+
   filter: blur(22px);
+
   pointer-events: none;
 }
 
 .eyebrow {
   margin-bottom: 22px;
+
   font-size: 0.72rem;
   font-weight: 700;
+
   letter-spacing: 0.24em;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+
   color: rgba(218, 225, 245, 0.76);
+
+  text-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.8);
 }
 
 .hero h1 {
   margin: 0;
+
   max-width: 900px;
+
   font-size: clamp(3.2rem, 8vw, 7.3rem);
+
   line-height: 0.91;
+
   letter-spacing: -0.06em;
-  text-shadow: 0 7px 38px rgba(0, 0, 0, 0.9);
+
+  text-shadow:
+    0 7px 38px rgba(0, 0, 0, 0.9);
 }
 
 .hero h1 span {
@@ -90,18 +127,30 @@ a {
 
 .hero p {
   max-width: 650px;
+
   margin: 28px auto 0;
+
   font-size: clamp(1rem, 1.8vw, 1.18rem);
+
   line-height: 1.65;
+
   color: rgba(237, 241, 249, 0.82);
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.95);
+
+  text-shadow:
+    0 2px 18px rgba(0, 0, 0, 0.95);
 }
+
+/* =========================================================
+   ACCIONES HERO
+   ========================================================= */
 
 .actions {
   display: flex;
   flex-direction: column;
   align-items: center;
+
   gap: 14px;
+
   margin-top: 32px;
 }
 
@@ -109,64 +158,352 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   min-height: 48px;
+
   padding: 0 26px;
+
   border: 1px solid rgba(219, 226, 244, 0.28);
   border-radius: 999px;
+
   background: rgba(8, 13, 30, 0.62);
-  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.32);
+
+  box-shadow:
+    0 16px 50px rgba(0, 0, 0, 0.32);
+
   backdrop-filter: blur(12px);
+
   color: #ffffff;
+
   text-decoration: none;
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .primaryButton:hover {
   transform: translateY(-2px);
+
   border-color: rgba(229, 234, 248, 0.5);
+
   background: rgba(18, 26, 52, 0.76);
+
+  box-shadow:
+    0 18px 54px rgba(0, 0, 0, 0.38);
+}
+
+.primaryButton:active {
+  transform: translateY(0);
+}
+
+.primaryButton:focus-visible {
+  outline: 2px solid rgba(210, 225, 255, 0.9);
+  outline-offset: 4px;
 }
 
 .hint {
   font-size: 0.75rem;
+
   letter-spacing: 0.07em;
+
   color: rgba(213, 221, 241, 0.52);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+
+  text-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.9);
 }
+
+/* =========================================================
+   PANEL PROFESIONAL
+   ========================================================= */
 
 .infoPanel {
-  width: min(900px, 100%);
+  width: min(920px, 100%);
+
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  grid-template-columns:
+    1.08fr
+    1.12fr
+    1fr;
+
   gap: 1px;
+
   margin: 10svh 0 18svh;
+
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  border: 1px solid rgba(180, 201, 244, 0.14);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(18px);
+
+  background: rgba(110, 135, 190, 0.08);
+
+  box-shadow:
+    0 30px 100px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+
+  backdrop-filter: blur(20px);
 }
 
-.infoPanel > div {
-  min-height: 130px;
+/* Cada columna */
+.infoPanel > .infoColumn {
+  background: rgba(3, 6, 17, 0.72);
+}
+
+.infoColumn {
+  min-height: 245px;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
+
+  padding: 28px 26px;
+}
+
+/* Bloques interiores */
+
+.infoBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
   gap: 8px;
-  padding: 26px;
-  background: rgba(3, 6, 17, 0.7);
 }
 
-.infoPanel strong {
+.infoBlockSecondary {
+  margin-top: auto;
+
+  padding-top: 22px;
+}
+
+/* =========================================================
+   TÍTULOS
+   ========================================================= */
+
+.infoTitle {
+  min-height: 24px;
+
+  display: flex;
+  align-items: center;
+
+  margin: 0;
+
   font-size: 1rem;
+  font-weight: 700;
+
+  color: rgba(250, 251, 255, 0.96);
 }
 
-.infoPanel span {
-  font-size: 0.87rem;
-  line-height: 1.5;
-  color: rgba(228, 233, 245, 0.65);
+.infoSubtitle {
+  margin: 0;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+
+  color: rgba(218, 228, 250, 0.86);
 }
+
+.infoBlock > span,
+.infoBlockSecondary > span {
+  font-size: 0.87rem;
+
+  line-height: 1.5;
+
+  color: rgba(228, 233, 245, 0.67);
+}
+
+/* =========================================================
+   CONTACTO
+   ========================================================= */
+
+.contactLinks {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 2px;
+}
+
+.contactLink {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 7px;
+
+  min-height: 34px;
+
+  padding: 6px 11px;
+
+  border: 1px solid rgba(173, 198, 255, 0.18);
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(130, 160, 230, 0.12),
+      rgba(80, 100, 170, 0.05)
+    );
+
+  color: rgba(225, 235, 255, 0.88);
+
+  font-size: 0.82rem;
+  font-weight: 500;
+
+  line-height: 1;
+
+  text-decoration: none;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 4px 18px rgba(0, 0, 0, 0.14);
+
+  backdrop-filter: blur(10px);
+
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.contactLink:hover {
+  color: #ffffff;
+
+  border-color: rgba(184, 211, 255, 0.48);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(132, 166, 244, 0.22),
+      rgba(87, 111, 190, 0.12)
+    );
+
+  box-shadow:
+    0 0 18px rgba(113, 153, 235, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  transform: translateY(-1px);
+}
+
+.contactLink:active {
+  transform: translateY(0);
+}
+
+.contactLink:focus-visible {
+  outline: 2px solid rgba(195, 218, 255, 0.9);
+  outline-offset: 3px;
+}
+
+.contactLink > span:last-child {
+  color: inherit;
+}
+
+/* =========================================================
+   ICONOS DE CONTACTO
+   ========================================================= */
+
+.contactIcon,
+.linkedinIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 21px;
+  height: 21px;
+
+  flex: 0 0 21px;
+
+  border: 1px solid rgba(187, 207, 255, 0.18);
+  border-radius: 50%;
+
+  background: rgba(148, 177, 239, 0.15);
+
+  color: #f4f7ff;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  line-height: 1;
+}
+
+.linkedinIcon {
+  color: #dce8ff;
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* =========================================================
+   TECNOLOGÍAS
+   ========================================================= */
+
+.techList {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 7px;
+
+  margin-top: 3px;
+}
+
+.techList span {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 27px;
+
+  padding: 4px 9px;
+
+  border: 1px solid rgba(171, 194, 242, 0.12);
+  border-radius: 999px;
+
+  background: rgba(127, 151, 207, 0.07);
+
+  color: rgba(220, 230, 250, 0.74);
+
+  font-size: 0.72rem;
+
+  line-height: 1;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.techList span:hover {
+  border-color: rgba(182, 206, 255, 0.25);
+
+  background: rgba(130, 160, 225, 0.12);
+
+  color: rgba(240, 245, 255, 0.9);
+}
+
+/* =========================================================
+   MODO EXPLORACIÓN
+   ========================================================= */
+
+body.galaxy-exploring {
+  overflow: hidden;
+}
+
+body.galaxy-exploring .content {
+  pointer-events: none;
+
+  opacity: 0.14;
+
+  filter: blur(1.5px);
+
+  user-select: none;
+}
+
+/* =========================================================
+   TABLET / MÓVIL
+   ========================================================= */
 
 @media (max-width: 720px) {
   .content {
@@ -175,6 +512,7 @@ a {
 
   .hero {
     min-height: 100svh;
+
     padding-inline: 16px;
   }
 
@@ -188,34 +526,101 @@ a {
 
   .infoPanel {
     grid-template-columns: 1fr;
+
+    width: min(520px, 100%);
   }
 
-  .infoPanel > div {
-    min-height: 105px;
+  .infoColumn {
+    min-height: auto;
+
+    padding: 24px 22px;
+  }
+
+  .infoBlockSecondary {
+    margin-top: 22px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .contactLinks {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+  .contactLink {
+    width: auto;
   }
 }
+
+/* =========================================================
+   MÓVIL PEQUEÑO
+   ========================================================= */
+
+@media (max-width: 430px) {
+  .content {
+    padding-inline: 14px;
+  }
+
+  .hero {
+    padding-inline: 8px;
+  }
+
+  .infoColumn {
+    padding: 22px 18px;
+  }
+
+  .contactLink {
+    width: 100%;
+  }
+
+  .contactLinks {
+    width: 100%;
+  }
+
+  .techList {
+    gap: 6px;
+  }
+}
+
+/* =========================================================
+   ACCESIBILIDAD
+   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
-  .primaryButton {
+  .content,
+  .primaryButton,
+  .contactLink,
+  .techList span {
     transition: none;
   }
 }
 
-.content {
-  transition: opacity 220ms ease, filter 220ms ease;
-}
+@media (prefers-contrast: more) {
+  .infoPanel {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
 
-body.galaxy-exploring {
-  overflow: hidden;
-}
+  .infoTitle,
+  .infoSubtitle {
+    color: #ffffff;
+  }
 
-body.galaxy-exploring .content {
-  pointer-events: none;
-  opacity: 0.14;
-  filter: blur(1.5px);
-  user-select: none;
+  .contactLink {
+    border-color: rgba(220, 230, 255, 0.45);
+
+    color: #ffffff;
+  }
+
+  .techList span {
+    border-color: rgba(220, 230, 255, 0.3);
+
+    color: #ffffff;
+  }
 }
