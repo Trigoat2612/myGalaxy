@@ -37,7 +37,7 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1.6-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1.7-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 const MOBILE_BREAKPOINT = 640;
@@ -71,6 +71,28 @@ function getCinematicStage(progress: number): CinematicStage {
   if (progress < 0.79) return 'core';
   if (progress < 1) return 'reveal';
   return 'complete';
+}
+
+function getMobileCinematicFov(progress: number) {
+  const p = THREE.MathUtils.clamp(progress, 0, 1);
+
+  // Start slightly tighter than the normal mobile camera, reach the most
+  // cinematic framing around the nucleus, then return smoothly to the normal
+  // mobile FOV before control is handed back to the user.
+  if (p < 0.18) {
+    return THREE.MathUtils.lerp(50, 48, p / 0.18);
+  }
+
+  if (p < 0.68) {
+    return THREE.MathUtils.lerp(48, 45.5, (p - 0.18) / 0.50);
+  }
+
+  if (p < 0.82) {
+    return THREE.MathUtils.lerp(45.5, 47.5, (p - 0.68) / 0.14);
+  }
+
+  const reveal = THREE.MathUtils.smoothstep(p, 0.82, 1.0);
+  return THREE.MathUtils.lerp(47.5, MOBILE_CAMERA_FOV, reveal);
 }
 
 function useReducedMotion() {
@@ -221,9 +243,11 @@ function CameraRig({
   const lastReportedStageRef = useRef<CinematicStage>('loading');
   const lastReportedBucketRef = useRef(-1);
 
+  const isMobileViewport = size.width < MOBILE_BREAKPOINT;
+
   const cinematicPositionCurve = useMemo(() => {
-    // One cubic Bézier, not a chain of spline segments. There is no internal
-    // knot at the approach/core boundary, so position and tangent stay smooth.
+    // One cubic Bézier, not a chain of spline segments. Mobile gets its own
+    // closer camera path while desktop preserves the established framing.
     const target = new THREE.Vector3(...DEFAULT_CAMERA.target);
     const cosPitch = Math.cos(DEFAULT_CAMERA.pitch);
     const finalPosition = target.clone().add(
@@ -234,25 +258,43 @@ function CameraRig({
       ),
     );
 
+    if (isMobileViewport) {
+      return new THREE.CubicBezierCurve3(
+        // Start closer than desktop so the galaxy fills more of the portrait
+        // viewport from the beginning of the cinematic.
+        new THREE.Vector3(-0.92, 3.05, 21.1),
+        new THREE.Vector3(-0.46, 2.35, 15.4),
+        // Stronger nucleus pass than V3.1.6. The control point is intentionally
+        // close, but the cubic curve keeps the tangent continuous.
+        new THREE.Vector3(0.12, 0.30, 1.55),
+        finalPosition,
+      );
+    }
+
     return new THREE.CubicBezierCurve3(
       new THREE.Vector3(-1.35, 3.75, 24.8),
       new THREE.Vector3(-0.62, 3.05, 19.7),
-      // This low-Z control point creates a close pass by the nucleus, but the
-      // Bézier turns around gradually instead of reversing at a spline knot.
       new THREE.Vector3(0.18, 0.35, 2.5),
       finalPosition,
     );
-  }, [baseZoom]);
+  }, [baseZoom, isMobileViewport]);
 
   const cinematicTargetCurve = useMemo(
     () =>
-      new THREE.CubicBezierCurve3(
-        new THREE.Vector3(0.22, 0.18, 0),
-        new THREE.Vector3(0.18, 0.10, 0),
-        new THREE.Vector3(0.07, -0.06, 0),
-        new THREE.Vector3(...DEFAULT_CAMERA.target),
-      ),
-    [],
+      isMobileViewport
+        ? new THREE.CubicBezierCurve3(
+            new THREE.Vector3(0.12, 0.08, 0),
+            new THREE.Vector3(0.10, 0.02, 0),
+            new THREE.Vector3(0.035, -0.055, 0),
+            new THREE.Vector3(...DEFAULT_CAMERA.target),
+          )
+        : new THREE.CubicBezierCurve3(
+            new THREE.Vector3(0.22, 0.18, 0),
+            new THREE.Vector3(0.18, 0.10, 0),
+            new THREE.Vector3(0.07, -0.06, 0),
+            new THREE.Vector3(...DEFAULT_CAMERA.target),
+          ),
+    [isMobileViewport],
   );
 
   useFrame((state, delta) => {
@@ -264,8 +306,13 @@ function CameraRig({
     if (cinematic.active) {
       if (cinematic.startedAt === null) {
         cinematic.startedAt = state.clock.elapsedTime;
-        camera.position.set(-1.35, 3.75, 24.8);
-        currentTargetRef.current.set(0.22, 0.18, 0);
+        if (isMobileViewport) {
+          camera.position.set(-0.92, 3.05, 21.1);
+          currentTargetRef.current.set(0.12, 0.08, 0);
+        } else {
+          camera.position.set(-1.35, 3.75, 24.8);
+          currentTargetRef.current.set(0.22, 0.18, 0);
+        }
         camera.lookAt(currentTargetRef.current);
       }
 
@@ -274,6 +321,14 @@ function CameraRig({
       const travel = cinematicTimeWarp(rawProgress);
       cinematic.progress = rawProgress;
       cinematic.stage = getCinematicStage(rawProgress);
+
+      if (camera instanceof THREE.PerspectiveCamera && isMobileViewport) {
+        const cinematicFov = getMobileCinematicFov(rawProgress);
+        if (Math.abs(camera.fov - cinematicFov) > 0.02) {
+          camera.fov = cinematicFov;
+          camera.updateProjectionMatrix();
+        }
+      }
 
       const bucket = Math.floor(rawProgress * 60);
       if (bucket !== lastReportedBucketRef.current || cinematic.stage !== lastReportedStageRef.current) {
@@ -305,6 +360,10 @@ function CameraRig({
         interaction.targetYaw = DEFAULT_CAMERA.yaw;
         interaction.targetPitch = DEFAULT_CAMERA.pitch;
         interaction.targetZoom = baseZoom;
+        if (camera instanceof THREE.PerspectiveCamera) {
+          camera.fov = baseFov;
+          camera.updateProjectionMatrix();
+        }
         onCinematicComplete();
       }
       return;
