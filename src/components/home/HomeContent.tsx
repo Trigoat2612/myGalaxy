@@ -1,7 +1,7 @@
 export default function HomeContent() {
   return (
     <main className="content">
-      <section className="hero">
+      <section id="inicio" className="hero">
         <span className="eyebrow">GALAXIA</span>
     
         <h1>
@@ -115,6 +115,13 @@ export default function HomeContent() {
           </div>
         </div>
       </section>
+
+      <div className="backToTopRow">
+        <a className="backToTopButton" href="#inicio" aria-label="Volver al inicio de la página">
+          <span aria-hidden="true">↑</span>
+          <span>Volver al inicio</span>
+        </a>
+      </div>
     </main>
   );
 }

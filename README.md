@@ -1,39 +1,40 @@
-# Galaxia Responsive v3.6.4
+# Galaxia Responsive v3.6.5
 
-Evolución aplicada: **Color grading galáctico + perfiles visuales**
+Evolución aplicada: **Photo Mode + Premium Capture**.
 
 ## Qué cambia
-- Se agregan tres perfiles visuales persistentes: **Cinemático**, **Realista** y **Vibrante**.
-- Cada perfil ajusta brillo, saturación, calidez, bloom y lectura del núcleo.
-- El disco galáctico, el núcleo, la nebulosa y las estrellas reaccionan al perfil elegido.
-- El selector se guarda en `localStorage`, así que conserva la preferencia del usuario.
 
-## Archivos tocados
+- Se conserva intacta la base estable v3.6.4.2: hotspots anclados y giro horizontal 360°.
+- Nuevo **Modo foto** disponible desde la interfaz principal.
+- El modo foto oculta la interfaz secundaria y deja la galaxia limpia para composición.
+- Presets rápidos de encuadre:
+  - General
+  - Núcleo
+  - Corriente
+  - Cuna estelar
+- Cuadrícula opcional de tercios para composición visual.
+- Exportación directa a **PNG de alta resolución** usando un DPR temporal de captura.
+- Durante la captura se ocultan los hotspots para producir una imagen limpia.
+- `Esc` sale del modo foto y restaura el estado de exploración previo.
+
+## Archivos principales añadidos
+
+- `src/components/galaxy/GalaxyPhotoModeOverlay.tsx`
+- `src/components/galaxy/PhotoCaptureController.tsx`
+
+## Archivos principales modificados
+
 - `src/components/galaxy/GalaxyBackground.tsx`
 - `src/components/galaxy/GalaxyBackground.module.css`
-- `src/components/galaxy/GalaxyVisualProfileOverlay.tsx`
-- `src/components/galaxy/visualProfiles.ts`
-- `src/components/galaxy/GalaxyShader.tsx`
-- `src/components/galaxy/GalaxyDisc.tsx`
-- `src/components/galaxy/GalacticCore.tsx`
-- `src/components/galaxy/NebulaShader.tsx`
-- `src/components/galaxy/StarClusters.tsx`
-- `src/components/galaxy/shaders.ts`
+- `src/app/globals.css`
+
+## Nota técnica
+
+La captura incrementa temporalmente el pixel ratio del renderer y restaura el estado original inmediatamente después de guardar la imagen. No modifica la calidad normal de ejecución de la escena.
 
 
-## Corrección v3.6.4.1
-
-- Se unificó el anclaje visual de **Cuna estelar** y **Corriente** para que sus formas acompañen a sus centros como una sola unidad.
-- Se eliminó la rotación independiente que provocaba deriva visual en los hotspots.
-- Se incrementó el brillo y la presencia de la galaxia en móvil.
-- Se aumentó la densidad y legibilidad de las capas de estrellas de fondo en móvil.
-
-
-## Corrección v3.6.4.2 · Hotspot Lock + 360° Orbit
-
-- **Cuna estelar** y **Corriente** ahora toman su centro directamente desde `GALAXY_HOTSPOTS`, eliminando coordenadas duplicadas.
-- La capa que contiene sus formas ya **no rota de forma independiente** alrededor del núcleo. Se mueve únicamente junto con la galaxia, por lo que forma, centro y etiqueta permanecen unidos.
-- Se conserva una animación interna leve (twinkle/movimiento vertical), sin alterar la posición conceptual del hotspot.
-- El giro horizontal del modo exploración deja de estar limitado a `[-0.9, 0.9]` radianes.
-- Mouse, touch y teclas izquierda/derecha permiten ahora **órbita horizontal continua de 360°** en ambos sentidos.
-- El fallback WebGL/R3F usa el mismo comportamiento de órbita completa.
+## Corrección v3.6.5.1
+- El botón **Modo foto** ahora también se renderiza en el backend WebGPU de producción, que era la causa de que no apareciera.
+- Photo Mode funciona tanto en WebGPU como en el fallback WebGL2.
+- Se agregó **Volver al inicio** debajo de la sección profesional.
+- El botón `Conoce al desarrollador` sigue desplazando a `#contacto` y el nuevo botón retorna suavemente a `#inicio`.

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import GalaxyAudioController from '../GalaxyAudioController';
 import GalaxyCinematicOverlay, { type CinematicStage } from '../GalaxyCinematicOverlay';
 import GalaxyExplorerOverlay from '../GalaxyExplorerOverlay';
+import GalaxyPhotoModeOverlay, { type PhotoPreset } from '../GalaxyPhotoModeOverlay';
 import { DEFAULT_CAMERA, GALAXY_HOTSPOTS, GALAXY_VISUAL_TUNING, type GalaxyHotspotId } from '../galaxyConfig';
 import styles from '../GalaxyBackground.module.css';
 
@@ -157,6 +158,7 @@ export default function WebGPUInteractiveGalaxy({
     cluster: null,
   });
   const explorationRef = useRef(false);
+  const photoModeRef = useRef(false);
   const selectedHotspotRef = useRef<GalaxyHotspotId | null>(null);
   const interactionRef = useRef<InteractionState>({
     yaw: DEFAULT_CAMERA.yaw,
@@ -172,6 +174,11 @@ export default function WebGPUInteractiveGalaxy({
     progress: 0,
     stage: 'loading',
   });
+  const webgpuCaptureRef = useRef<((filename: string) => Promise<void>) | null>(null);
+  const photoPreviousStateRef = useRef<{ explorationEnabled: boolean; selectedHotspot: GalaxyHotspotId | null }>({
+    explorationEnabled: false,
+    selectedHotspot: null,
+  });
 
   const [state, setState] = useState<RuntimeState>('initializing');
   const [stats, setStats] = useState<MigrationStats | null>(null);
@@ -182,6 +189,10 @@ export default function WebGPUInteractiveGalaxy({
   const [cinematicActive, setCinematicActive] = useState(false);
   const [cinematicStage, setCinematicStage] = useState<CinematicStage>('loading');
   const [cinematicProgress, setCinematicProgress] = useState(0);
+  const [photoModeActive, setPhotoModeActive] = useState(false);
+  const [photoGridEnabled, setPhotoGridEnabled] = useState(false);
+  const [photoPreset, setPhotoPreset] = useState<PhotoPreset>('general');
+  const [photoCapturing, setPhotoCapturing] = useState(false);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -211,6 +222,15 @@ export default function WebGPUInteractiveGalaxy({
     document.body.classList.toggle('galaxy-exploring', explorationEnabled);
     return () => document.body.classList.remove('galaxy-exploring');
   }, [explorationEnabled]);
+
+  useEffect(() => {
+    photoModeRef.current = photoModeActive;
+    document.body.classList.toggle('galaxy-photo-mode', photoModeActive);
+    return () => {
+      photoModeRef.current = false;
+      document.body.classList.remove('galaxy-photo-mode');
+    };
+  }, [photoModeActive]);
 
   const finishCinematic = useCallback(() => {
     cinematicRef.current.active = false;
@@ -296,6 +316,71 @@ export default function WebGPUInteractiveGalaxy({
     return () => window.clearInterval(timer);
   }, [cinematicActive, presentationActive, selectHotspot]);
 
+  const applyPhotoPreset = useCallback((preset: PhotoPreset) => {
+    setPhotoPreset(preset);
+    setPresentationActive(false);
+    explorationRef.current = true;
+    setExplorationEnabled(true);
+
+    if (preset === 'general') {
+      resetCamera();
+      return;
+    }
+
+    selectHotspot(preset);
+  }, [resetCamera, selectHotspot]);
+
+  const enterPhotoMode = useCallback(() => {
+    if (cinematicRef.current.active) return;
+    photoPreviousStateRef.current = { explorationEnabled, selectedHotspot };
+    setPresentationActive(false);
+    explorationRef.current = true;
+    setExplorationEnabled(true);
+    setPhotoModeActive(true);
+    applyPhotoPreset('general');
+  }, [applyPhotoPreset, explorationEnabled, selectedHotspot]);
+
+  const exitPhotoMode = useCallback(() => {
+    const previous = photoPreviousStateRef.current;
+    setPhotoModeActive(false);
+    setPhotoGridEnabled(false);
+    setPhotoPreset('general');
+    explorationRef.current = previous.explorationEnabled;
+    setExplorationEnabled(previous.explorationEnabled);
+
+    if (previous.explorationEnabled && previous.selectedHotspot) {
+      selectHotspot(previous.selectedHotspot);
+    } else {
+      resetCamera();
+    }
+  }, [resetCamera, selectHotspot]);
+
+  useEffect(() => {
+    if (!photoModeActive) return;
+
+    const onPhotoKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') exitPhotoMode();
+    };
+
+    window.addEventListener('keydown', onPhotoKeyDown);
+    return () => window.removeEventListener('keydown', onPhotoKeyDown);
+  }, [exitPhotoMode, photoModeActive]);
+
+  const capturePhoto = useCallback(async () => {
+    const capture = webgpuCaptureRef.current;
+    if (!capture || photoCapturing) return;
+
+    setPhotoCapturing(true);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+    try {
+      const suffix = photoPreset === 'general' ? 'general' : photoPreset;
+      await capture(`galaxia-v3.6.5.1-${suffix}.png`);
+    } finally {
+      setPhotoCapturing(false);
+    }
+  }, [photoCapturing, photoPreset]);
+
   useEffect(() => {
     let disposed = false;
     let cleanup = () => {};
@@ -371,6 +456,46 @@ export default function WebGPUInteractiveGalaxy({
           currentTarget.z + Math.cos(initialInteraction.yaw) * initialCosPitch * initialInteraction.zoom,
         );
         camera.lookAt(currentTarget);
+
+        webgpuCaptureRef.current = async (filename: string) => {
+          const width = Math.max(1, host.clientWidth);
+          const height = Math.max(1, host.clientHeight);
+          const previousPixelRatio = renderer.getPixelRatio();
+          const exportPixelRatio = Math.min(3, Math.max(2, (window.devicePixelRatio || 1) * 1.5));
+
+          renderer.setPixelRatio(exportPixelRatio);
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+
+          if (typeof renderer.renderAsync === 'function') {
+            await renderer.renderAsync(scene, camera);
+          } else {
+            renderer.render(scene, camera);
+          }
+
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+          const blob = await new Promise<Blob | null>((resolve) => {
+            renderer.domElement.toBlob(resolve, 'image/png', 1);
+          });
+
+          renderer.setPixelRatio(previousPixelRatio);
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+
+          if (!blob) throw new Error('No se pudo generar la captura PNG del canvas WebGPU.');
+
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = filename;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        };
 
         const root = new THREE.Group();
         root.rotation.x = VIEW_TUNING.rootTiltX;
@@ -1506,7 +1631,7 @@ export default function WebGPUInteractiveGalaxy({
             }
           }
 
-          const showHotspots = explorationRef.current && !cinematicRef.current.active;
+          const showHotspots = explorationRef.current && !cinematicRef.current.active && !photoModeRef.current;
           root.updateMatrixWorld(true);
           GALAXY_HOTSPOTS.forEach((hotspot) => {
             const group = hotspotGroups.get(hotspot.id);
@@ -1590,6 +1715,7 @@ export default function WebGPUInteractiveGalaxy({
 
           geometries.forEach((geometry) => geometry.dispose());
           materials.forEach((material) => material.dispose());
+          webgpuCaptureRef.current = null;
           renderer.dispose();
 
           if (renderer.domElement.parentElement === host) {
@@ -1619,6 +1745,7 @@ export default function WebGPUInteractiveGalaxy({
     >
       <div ref={mountRef} className="webgpuMigrationCanvas" />
 
+      {!photoModeActive && !photoCapturing && (
       <div className="webgpuHotspotLayer" aria-label="Regiones interactivas de la galaxia">
         {GALAXY_HOTSPOTS.map((hotspot) => (
           <button
@@ -1636,6 +1763,7 @@ export default function WebGPUInteractiveGalaxy({
           </button>
         ))}
       </div>
+      )}
 
       <GalaxyCinematicOverlay
         active={cinematicActive}
@@ -1644,19 +1772,35 @@ export default function WebGPUInteractiveGalaxy({
         onSkip={skipCinematic}
       />
 
-      <GalaxyAudioController hidden={cinematicActive || state !== 'running'} />
+      <GalaxyAudioController hidden={cinematicActive || state !== 'running' || photoModeActive || photoCapturing} />
 
-      <div className={cinematicActive ? styles.explorerHiddenDuringIntro : undefined}>
-        <GalaxyExplorerOverlay
-          enabled={explorationEnabled}
-          selected={selectedHotspot}
-          presentationActive={presentationActive}
-          onToggle={toggleExploration}
-          onReset={handleResetCamera}
-          onSelect={manualSelectHotspot}
-          onTogglePresentation={togglePresentation}
+      {!photoModeActive && !photoCapturing && (
+        <div className={cinematicActive ? styles.explorerHiddenDuringIntro : undefined}>
+          <GalaxyExplorerOverlay
+            enabled={explorationEnabled}
+            selected={selectedHotspot}
+            presentationActive={presentationActive}
+            onToggle={toggleExploration}
+            onReset={handleResetCamera}
+            onSelect={manualSelectHotspot}
+            onTogglePresentation={togglePresentation}
+          />
+        </div>
+      )}
+
+      {!cinematicActive && state === 'running' && (
+        <GalaxyPhotoModeOverlay
+          active={photoModeActive}
+          capturing={photoCapturing}
+          gridEnabled={photoGridEnabled}
+          selectedPreset={photoPreset}
+          onEnter={enterPhotoMode}
+          onExit={exitPhotoMode}
+          onCapture={capturePhoto}
+          onToggleGrid={() => setPhotoGridEnabled((current) => !current)}
+          onPreset={applyPhotoPreset}
         />
-      </div>
+      )}
 
       {mode === 'candidate' && !cinematicActive && !explorationEnabled && (
         <div className="webgpuCandidateBadge">

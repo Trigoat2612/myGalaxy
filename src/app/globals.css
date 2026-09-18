@@ -1106,3 +1106,59 @@ body:not(.galaxy-exploring) .content {
   color: #dce8ff;
   pointer-events: auto;
 }
+
+/* V3.6.5 · PHOTO MODE */
+body.galaxy-photo-mode {
+  overflow: hidden;
+}
+
+body.galaxy-photo-mode .content {
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  user-select: none;
+}
+
+
+/* V3.6.5.1 · RETURN HOME */
+.backToTopRow {
+  width: min(920px, calc(100vw - 36px));
+  margin: 18px auto 34px;
+  display: flex;
+  justify-content: center;
+}
+
+.backToTopButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(203, 218, 250, 0.18);
+  border-radius: 999px;
+  background: rgba(5, 9, 21, 0.72);
+  color: rgba(245, 248, 255, 0.92);
+  text-decoration: none;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(14px);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.backToTopButton:hover {
+  transform: translateY(-2px);
+  border-color: rgba(192, 211, 252, 0.38);
+  background: rgba(14, 21, 42, 0.82);
+}
+
+@media (max-width: 720px) {
+  .backToTopRow {
+    width: calc(100vw - 24px);
+    margin: 14px auto 26px;
+  }
+
+  .backToTopButton {
+    min-height: 42px;
+    font-size: 0.88rem;
+  }
+}

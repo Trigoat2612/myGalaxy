@@ -949,3 +949,207 @@
     gap: 7px;
   }
 }
+
+/* V3.6.5 · PHOTO MODE */
+.photoModeLauncher {
+  position: fixed;
+  right: clamp(14px, 2vw, 26px);
+  bottom: clamp(14px, 2vw, 24px);
+  z-index: 72;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid rgba(193, 211, 248, 0.22);
+  border-radius: 999px;
+  background: rgba(4, 8, 20, 0.68);
+  color: rgba(244, 247, 255, 0.92);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.photoModeLauncher:hover {
+  transform: translateY(-2px);
+  border-color: rgba(193, 211, 248, 0.38);
+  background: rgba(11, 18, 38, 0.78);
+}
+
+.photoGrid {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.photoGridV1,
+.photoGridV2,
+.photoGridH1,
+.photoGridH2 {
+  position: absolute;
+  display: block;
+  background: rgba(235, 242, 255, 0.18);
+  box-shadow: 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.photoGridV1,
+.photoGridV2 {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.photoGridV1 { left: 33.333%; }
+.photoGridV2 { left: 66.666%; }
+
+.photoGridH1,
+.photoGridH2 {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.photoGridH1 { top: 33.333%; }
+.photoGridH2 { top: 66.666%; }
+
+.photoModeBar {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(14px, 2vw, 24px);
+  z-index: 74;
+  width: min(860px, calc(100vw - 28px));
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(280px, 1.4fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(193, 211, 248, 0.16);
+  border-radius: 20px;
+  background: rgba(4, 8, 20, 0.76);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.photoModeTitle {
+  min-width: 0;
+}
+
+.photoModeEyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(184, 204, 241, 0.52);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.photoModeTitle strong {
+  display: block;
+  color: #f6f8ff;
+  font-size: 0.84rem;
+}
+
+.photoPresetRow,
+.photoModeActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.photoPresetRow {
+  justify-content: center;
+}
+
+.photoModeActions {
+  justify-content: flex-end;
+}
+
+.photoPreset,
+.photoPresetActive,
+.photoUtilityButton,
+.photoCaptureButton {
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(207, 220, 249, 0.12);
+  padding: 0 11px;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.photoPreset,
+.photoUtilityButton {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(225, 233, 250, 0.68);
+}
+
+.photoPresetActive {
+  border-color: rgba(176, 202, 255, 0.36);
+  background: rgba(111, 151, 224, 0.14);
+  color: #f5f8ff;
+}
+
+.photoCaptureButton {
+  border-color: rgba(185, 210, 255, 0.44);
+  background: rgba(145, 179, 244, 0.16);
+  color: #ffffff;
+}
+
+.photoPreset:hover,
+.photoPresetActive:hover,
+.photoUtilityButton:hover,
+.photoCaptureButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(203, 220, 255, 0.36);
+}
+
+@media (max-width: 720px) {
+  .photoModeLauncher {
+    right: 10px;
+    bottom: 10px;
+    min-height: 38px;
+    padding: 0 13px;
+    font-size: 0.72rem;
+  }
+
+  .photoModeBar {
+    bottom: 10px;
+    width: calc(100vw - 20px);
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .photoModeTitle {
+    display: none;
+  }
+
+  .photoPresetRow,
+  .photoModeActions {
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+
+  .photoPresetRow::-webkit-scrollbar,
+  .photoModeActions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .photoPreset,
+  .photoPresetActive,
+  .photoUtilityButton,
+  .photoCaptureButton {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.67rem;
+  }
+}

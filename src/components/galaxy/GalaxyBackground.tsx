@@ -20,6 +20,8 @@ import {
 } from './galaxyConfig';
 import RendererDiagnostics from './rendering/RendererDiagnostics';
 import GalaxyVisualProfileOverlay from './GalaxyVisualProfileOverlay';
+import GalaxyPhotoModeOverlay, { type PhotoPreset } from './GalaxyPhotoModeOverlay';
+import PhotoCaptureController, { type PhotoCaptureApi } from './PhotoCaptureController';
 import { detectGalaxyRendererCapabilities } from './rendering/rendererCapabilities';
 import { getAdaptiveSceneProfile, resolveZoomBand, type ZoomBand } from './rendering/adaptiveSceneProfile';
 import type { QualityLevel } from './types';
@@ -435,6 +437,8 @@ function ResponsiveScene({
   maxDpr,
   zoomBand,
   visualProfileId,
+  captureApiRef,
+  photoCapturing,
 }: {
   quality: QualityLevel;
   animate: boolean;
@@ -450,6 +454,8 @@ function ResponsiveScene({
   maxDpr: number;
   zoomBand: ZoomBand;
   visualProfileId: GalaxyVisualProfileId;
+  captureApiRef: RefObject<PhotoCaptureApi | null>;
+  photoCapturing: boolean;
 }) {
   const { size } = useThree();
   const profile = useMemo(() => getAdaptiveSceneProfile({
@@ -485,6 +491,7 @@ function ResponsiveScene({
 
   return (
     <>
+      <PhotoCaptureController apiRef={captureApiRef} />
       <AdaptiveSharpnessController
         interactionRef={interactionRef}
         explorationEnabled={explorationEnabled && !introActive}
@@ -510,7 +517,7 @@ function ResponsiveScene({
             stars={profile.galaxy}
             dust={profile.dust}
             animate={animate}
-            explorationEnabled={explorationEnabled && !introActive}
+            explorationEnabled={explorationEnabled && !introActive && !photoCapturing}
             selectedHotspot={selectedHotspot}
             onSelectHotspot={onSelectHotspot}
             interactionRef={interactionRef}
@@ -556,6 +563,15 @@ export default function GalaxyBackground() {
   const [cinematicProgress, setCinematicProgress] = useState(0);
   const [presentationActive, setPresentationActive] = useState(false);
   const [visualProfileId, setVisualProfileId] = useState<GalaxyVisualProfileId>('cinematic');
+  const [photoModeActive, setPhotoModeActive] = useState(false);
+  const [photoGridEnabled, setPhotoGridEnabled] = useState(false);
+  const [photoPreset, setPhotoPreset] = useState<PhotoPreset>('general');
+  const [photoCapturing, setPhotoCapturing] = useState(false);
+  const captureApiRef = useRef<PhotoCaptureApi | null>(null);
+  const photoPreviousStateRef = useRef<{ explorationEnabled: boolean; selectedHotspot: GalaxyHotspotId | null }>({
+    explorationEnabled: false,
+    selectedHotspot: null,
+  });
 
   useEffect(() => {
     const alreadySeen = sessionStorage.getItem(CINEMATIC_SESSION_KEY) === '1';
@@ -586,6 +602,11 @@ export default function GalaxyBackground() {
     document.body.classList.toggle('galaxy-exploring', explorationEnabled);
     return () => document.body.classList.remove('galaxy-exploring');
   }, [explorationEnabled]);
+
+  useEffect(() => {
+    document.body.classList.toggle('galaxy-photo-mode', photoModeActive);
+    return () => document.body.classList.remove('galaxy-photo-mode');
+  }, [photoModeActive]);
 
   useEffect(() => {
     const syncZoomBand = () => {
@@ -705,6 +726,79 @@ export default function GalaxyBackground() {
     resetCamera();
   };
 
+  const applyPhotoPreset = useCallback((preset: PhotoPreset) => {
+    setPhotoPreset(preset);
+    setPresentationActive(false);
+    setExplorationEnabled(true);
+
+    if (preset === 'general') {
+      const interaction = interactionRef.current;
+      interaction.targetYaw = DEFAULT_CAMERA.yaw;
+      interaction.targetPitch = DEFAULT_CAMERA.pitch;
+      interaction.targetZoom = getViewportDefaultZoom();
+      setSelectedHotspot(null);
+      return;
+    }
+
+    setSelectedHotspot(preset);
+    const hotspot = GALAXY_HOTSPOTS.find((item) => item.id === preset);
+    if (!hotspot) return;
+
+    const interaction = interactionRef.current;
+    interaction.targetYaw = 0;
+    interaction.targetPitch = DEFAULT_CAMERA.pitch;
+    interaction.targetZoom = hotspot.zoom;
+  }, []);
+
+  const enterPhotoMode = useCallback(() => {
+    if (cinematicRef.current.active) return;
+    photoPreviousStateRef.current = { explorationEnabled, selectedHotspot };
+    setPresentationActive(false);
+    setExplorationEnabled(true);
+    setPhotoModeActive(true);
+    applyPhotoPreset('general');
+  }, [applyPhotoPreset, explorationEnabled, selectedHotspot]);
+
+  const exitPhotoMode = useCallback(() => {
+    const previous = photoPreviousStateRef.current;
+    setPhotoModeActive(false);
+    setPhotoGridEnabled(false);
+    setPhotoPreset('general');
+    setExplorationEnabled(previous.explorationEnabled);
+
+    if (previous.explorationEnabled && previous.selectedHotspot) {
+      selectHotspot(previous.selectedHotspot);
+    } else {
+      resetCamera();
+    }
+  }, [resetCamera, selectHotspot]);
+
+  useEffect(() => {
+    if (!photoModeActive) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') exitPhotoMode();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [exitPhotoMode, photoModeActive]);
+
+  const capturePhoto = useCallback(async () => {
+    const api = captureApiRef.current;
+    if (!api || photoCapturing) return;
+
+    setPhotoCapturing(true);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+    try {
+      const suffix = photoPreset === 'general' ? 'general' : photoPreset;
+      await api.capturePng(`galaxia-v3.6.5-${suffix}.png`);
+    } finally {
+      setPhotoCapturing(false);
+    }
+  }, [photoCapturing, photoPreset]);
+
   const toggleExploration = () => {
     if (cinematicRef.current.active) return;
     if (explorationEnabled) {
@@ -744,6 +838,7 @@ export default function GalaxyBackground() {
             antialias: false,
             alpha: true,
             powerPreference: 'high-performance',
+            preserveDrawingBuffer: true,
           }}
         >
           <color attach="background" args={['#01030a']} />
@@ -768,6 +863,8 @@ export default function GalaxyBackground() {
               maxDpr={maxDpr}
               zoomBand={zoomBand}
               visualProfileId={visualProfileId}
+              captureApiRef={captureApiRef}
+              photoCapturing={photoCapturing}
             />
           </PerformanceMonitor>
         </Canvas>
@@ -784,8 +881,9 @@ export default function GalaxyBackground() {
         onSkip={skipCinematic}
       />
 
-      <GalaxyAudioController hidden={cinematicActive} />
+      <GalaxyAudioController hidden={cinematicActive || photoModeActive || photoCapturing} />
 
+      {!photoModeActive && !photoCapturing && (
       <div className={cinematicActive ? styles.explorerHiddenDuringIntro : undefined}>
         <GalaxyExplorerOverlay
           enabled={explorationEnabled}
@@ -797,14 +895,29 @@ export default function GalaxyBackground() {
           onTogglePresentation={togglePresentation}
         />
       </div>
+      )}
 
       <GalaxyVisualProfileOverlay
         value={visualProfileId}
         onChange={setVisualProfileId}
-        hidden={cinematicActive}
+        hidden={cinematicActive || photoModeActive || photoCapturing}
       />
 
-      <RendererDiagnostics />
+      {!cinematicActive && (
+      <GalaxyPhotoModeOverlay
+        active={photoModeActive}
+        capturing={photoCapturing}
+        gridEnabled={photoGridEnabled}
+        selectedPreset={photoPreset}
+        onEnter={enterPhotoMode}
+        onExit={exitPhotoMode}
+        onCapture={capturePhoto}
+        onToggleGrid={() => setPhotoGridEnabled((current) => !current)}
+        onPreset={applyPhotoPreset}
+      />
+      )}
+
+      {!photoModeActive && !photoCapturing && <RendererDiagnostics />}
     </>
   );
 }
