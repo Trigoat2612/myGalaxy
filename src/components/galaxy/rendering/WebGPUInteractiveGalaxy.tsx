@@ -79,8 +79,8 @@ const DESKTOP_MIN_ZOOM = 0.40;
 const MOBILE_MAX_ZOOM = 36;
 const DESKTOP_MAX_ZOOM = 28;
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-webgpu-cinematic-v3.6.7-seen';
-const PERFORMANCE_MODE_STORAGE_KEY = 'galaxy-performance-mode-v3.6.7';
+const CINEMATIC_SESSION_KEY = 'galaxy-webgpu-cinematic-v3.7.1-seen';
+const PERFORMANCE_MODE_STORAGE_KEY = 'galaxy-performance-mode-v3.7.1';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 const STAR_TUNING = GALAXY_VISUAL_TUNING.stars;
@@ -190,7 +190,7 @@ export default function WebGPUInteractiveGalaxy({
 
   const [state, setState] = useState<RuntimeState>('initializing');
   const [stats, setStats] = useState<MigrationStats | null>(null);
-  const [message, setMessage] = useState('Inicializando la experiencia WebGPU + TSL…');
+  const [message, setMessage] = useState('Inicializando WebGPU + TSL · Differential Motion Safe…');
   const [explorationEnabled, setExplorationEnabled] = useState(false);
   const [selectedHotspot, setSelectedHotspot] = useState<GalaxyHotspotId | null>(null);
   const [presentationActive, setPresentationActive] = useState(false);
@@ -427,7 +427,7 @@ export default function WebGPUInteractiveGalaxy({
 
     try {
       const suffix = photoPreset === 'general' ? 'general' : photoPreset;
-      await capture(`galaxia-v3.6.7.2-${suffix}.png`);
+      await capture(`galaxia-v3.7.1-${suffix}.png`);
     } finally {
       setPhotoCapturing(false);
     }
@@ -574,6 +574,13 @@ export default function WebGPUInteractiveGalaxy({
             rotationSpeed: number;
             verticalMotion: number;
             twinkleSpeed: number;
+            flow?: {
+              directionX: number;
+              directionZ: number;
+              speed: number;
+              strength: number;
+              lateralStrength: number;
+            };
           },
         ) {
           const count = data.sizes.length;
@@ -597,12 +604,32 @@ export default function WebGPUInteractiveGalaxy({
             const angle = TSL.time.mul(options.rotationSpeed).add(instancePhase.mul(0.0015));
             const c = TSL.cos(angle);
             const s = TSL.sin(angle);
-            const x = instancePosition.x.mul(c).sub(instancePosition.z.mul(s));
-            const z = instancePosition.x.mul(s).add(instancePosition.z.mul(c));
-            const y = instancePosition.y.add(
+            const baseX = instancePosition.x.mul(c).sub(instancePosition.z.mul(s));
+            const baseZ = instancePosition.x.mul(s).add(instancePosition.z.mul(c));
+            const baseY = instancePosition.y.add(
               TSL.sin(TSL.time.mul(0.16).add(instancePhase)).mul(options.verticalMotion),
             );
-            return TSL.vec3(x, y, z);
+
+            if (options.flow) {
+              const flowPhase = TSL.time.mul(options.flow.speed).sub(instancePhase);
+              const forward = TSL.sin(flowPhase).mul(options.flow.strength);
+              const lateral = TSL.sin(flowPhase.mul(0.57).add(instancePhase.mul(0.31)))
+                .mul(options.flow.lateralStrength);
+              const orthoX = -options.flow.directionZ;
+              const orthoZ = options.flow.directionX;
+
+              return TSL.vec3(
+                baseX
+                  .add(forward.mul(options.flow.directionX))
+                  .add(lateral.mul(orthoX)),
+                baseY.add(TSL.sin(flowPhase.mul(0.72)).mul(options.verticalMotion * 2.1)),
+                baseZ
+                  .add(forward.mul(options.flow.directionZ))
+                  .add(lateral.mul(orthoZ)),
+              );
+            }
+
+            return TSL.vec3(baseX, baseY, baseZ);
           })();
 
           material.scaleNode = TSL.vec2(
@@ -617,6 +644,14 @@ export default function WebGPUInteractiveGalaxy({
             const twinkle = TSL.sin(TSL.time.mul(options.twinkleSpeed).add(instancePhase))
               .mul(0.07)
               .add(0.93);
+
+            if (options.flow) {
+              const flowGlow = TSL.sin(
+                TSL.time.mul(options.flow.speed * 1.42).sub(instancePhase),
+              ).mul(0.5).add(0.5);
+              return instanceColor.mul(twinkle).mul(flowGlow.mul(0.18).add(0.94));
+            }
+
             return instanceColor.mul(twinkle);
           })();
 
@@ -629,7 +664,7 @@ export default function WebGPUInteractiveGalaxy({
             const twinkle = TSL.sin(TSL.time.mul(options.twinkleSpeed).add(instancePhase))
               .mul(STAR_TUNING.twinkleAmplitude)
               .add(STAR_TUNING.twinkleBase);
-            return circle
+            const baseOpacity = circle
               .mul(
                 core
                   .mul(STAR_TUNING.spriteCoreWeight)
@@ -638,6 +673,15 @@ export default function WebGPUInteractiveGalaxy({
               )
               .mul(twinkle)
               .mul(options.opacity);
+
+            if (options.flow) {
+              const flowGlow = TSL.sin(
+                TSL.time.mul(options.flow.speed * 1.42).sub(instancePhase),
+              ).mul(0.5).add(0.5);
+              return baseOpacity.mul(flowGlow.mul(0.20).add(0.88));
+            }
+
+            return baseOpacity;
           })();
 
           const geometry = trackGeometry(new THREE.PlaneGeometry(1, 1));
@@ -687,7 +731,12 @@ export default function WebGPUInteractiveGalaxy({
           return { positions, colors, sizes, phases };
         }
 
-        function createGalaxyLayer(count: number, dust = false): LayerData {
+        function createGalaxyLayer(
+          count: number,
+          dust = false,
+          radiusMinRatio = 0,
+          radiusMaxRatio = 1,
+        ): LayerData {
           const random = createRandom((dust ? 18871 : 99211) + count);
           const positions = new Float32Array(count * 3);
           const colors = new Float32Array(count * 3);
@@ -695,6 +744,8 @@ export default function WebGPUInteractiveGalaxy({
           const phases = new Float32Array(count);
           const branches = 4;
           const maxRadius = dust ? 14.2 : 13.4;
+          const radiusMin = maxRadius * THREE.MathUtils.clamp(radiusMinRatio, 0, 1);
+          const radiusMax = maxRadius * THREE.MathUtils.clamp(radiusMaxRatio, radiusMinRatio, 1);
           const warm = new THREE.Color('#ffd7a5');
           const neutral = new THREE.Color('#eef3ff');
           const blue = new THREE.Color('#a8c7ff');
@@ -703,7 +754,8 @@ export default function WebGPUInteractiveGalaxy({
 
           for (let i = 0; i < count; i++) {
             const i3 = i * 3;
-            const radius = Math.pow(random(), dust ? 0.72 : 0.64) * maxRadius;
+            const radialSample = Math.pow(random(), dust ? 0.72 : 0.64);
+            const radius = radiusMin + radialSample * Math.max(0.0001, radiusMax - radiusMin);
             const branch = i % branches;
             const branchAngle = (branch / branches) * Math.PI * 2;
             const spin = radius * (dust ? 0.30 : 0.31);
@@ -740,7 +792,7 @@ export default function WebGPUInteractiveGalaxy({
           return { positions, colors, sizes, phases };
         }
 
-        function createCoreLayer(count: number): LayerData {
+        function createCoreLayer(count: number, radiusMinRatio = 0, radiusMaxRatio = 1): LayerData {
           const random = createRandom(71341 + count);
           const positions = new Float32Array(count * 3);
           const colors = new Float32Array(count * 3);
@@ -750,11 +802,14 @@ export default function WebGPUInteractiveGalaxy({
           const warm = new THREE.Color('#ffd5a0');
           const cool = new THREE.Color('#d8e4ff');
           const current = new THREE.Color();
+          const coreRadius = 1.86;
+          const radiusMin = coreRadius * THREE.MathUtils.clamp(radiusMinRatio, 0, 1);
+          const radiusMax = coreRadius * THREE.MathUtils.clamp(radiusMaxRatio, radiusMinRatio, 1);
 
           for (let i = 0; i < count; i++) {
             const i3 = i * 3;
             const angle = random() * Math.PI * 2;
-            const radius = Math.pow(random(), 2.35) * 1.86;
+            const radius = radiusMin + Math.pow(random(), 2.35) * Math.max(0.0001, radiusMax - radiusMin);
             const flatten = 0.74 + random() * 0.14;
 
             positions[i3] = Math.cos(angle) * radius;
@@ -772,6 +827,63 @@ export default function WebGPUInteractiveGalaxy({
               ? 0.022 + random() * 0.008
               : 0.006 + Math.pow(random(), 3.4) * 0.0085;
             phases[i] = random() * Math.PI * 2;
+          }
+
+          return { positions, colors, sizes, phases };
+        }
+
+        function createLivingStreamLayer(count: number): LayerData {
+          const random = createRandom(88421 + count);
+          const positions = new Float32Array(count * 3);
+          const colors = new Float32Array(count * 3);
+          const sizes = new Float32Array(count);
+          const phases = new Float32Array(count);
+          const streamAngle = -0.60;
+          const streamDirX = Math.cos(streamAngle);
+          const streamDirZ = Math.sin(streamAngle);
+          const streamOrthoX = -streamDirZ;
+          const streamOrthoZ = streamDirX;
+          const softBlue = new THREE.Color('#8fc1ff');
+          const neutralWhite = new THREE.Color('#f4f6ff');
+          const warmWhite = new THREE.Color('#ffe4b8');
+
+          for (let i = 0; i < count; i++) {
+            const i3 = i * 3;
+            const t = random() * 2 - 1;
+            const branchRoll = random();
+
+            if (branchRoll < 0.64) {
+              const arcAngle = -1.10 + t * 1.05 + signedNoise(random) * 0.08;
+              const arcRadius = 0.22 + (1 - Math.abs(t)) * 0.78 + random() * 0.10;
+              const ringX = Math.cos(arcAngle) * arcRadius;
+              const ringZ = Math.sin(arcAngle) * arcRadius * 0.26;
+              const ringY = signedNoise(random) * 0.040;
+              positions[i3] = streamDirX * ringZ + streamOrthoX * ringX;
+              positions[i3 + 1] = ringY * 1.15;
+              positions[i3 + 2] = streamDirZ * ringZ + streamOrthoZ * ringX;
+            } else {
+              const along = t * (0.98 + random() * 0.28);
+              const width = (0.024 + (1 - Math.abs(t)) * 0.06) * Math.pow(random(), 0.58);
+              const lateral = signedNoise(random) * width;
+              const curve = Math.sin((t + 1) * Math.PI) * 0.18
+                + Math.sin((t + 1) * Math.PI * 0.5) * 0.06;
+              positions[i3] = streamDirX * along + streamOrthoX * (lateral + curve * 0.22);
+              positions[i3 + 1] = signedNoise(random) * (0.030 + width * 0.38);
+              positions[i3 + 2] = streamDirZ * along + streamOrthoZ * (lateral + curve);
+            }
+
+            const roll = random();
+            const source = roll < 0.50 ? softBlue : roll < 0.84 ? neutralWhite : warmWhite;
+            colors[i3] = source.r;
+            colors[i3 + 1] = source.g;
+            colors[i3 + 2] = source.b;
+            sizes[i] = random() > 0.996
+              ? 0.022 + random() * 0.010
+              : 0.007 + Math.pow(random(), 2.7) * 0.010;
+
+            // Correlate phase with position along the stream so brightness waves
+            // travel through the feature instead of blinking randomly in place.
+            phases[i] = ((t + 1) * 0.5) * Math.PI * 2 + signedNoise(random) * 0.24;
           }
 
           return { positions, colors, sizes, phases };
@@ -825,8 +937,8 @@ export default function WebGPUInteractiveGalaxy({
           const deepRed = new THREE.Color('#ff6e61');
           const current = new THREE.Color();
 
-          const streamCount = Math.floor(count * 0.38);
-          const cradleCount = Math.floor(count * 0.36);
+          const streamCount = 0;
+          const cradleCount = Math.floor(count * 0.58);
 
           for (let i = 0; i < count; i++) {
             const i3 = i * 3;
@@ -1157,32 +1269,99 @@ export default function WebGPUInteractiveGalaxy({
           { opacity: STAR_TUNING.nearOpacity, rotationSpeed: 0.0018, verticalMotion: 0.006, twinkleSpeed: 0.42 },
         );
 
-        const galaxyStars = createParticleLayer(createGalaxyLayer(galaxyCount), {
+        const galaxyInnerCount = Math.max(1, Math.floor(galaxyCount * 0.38));
+        const galaxyMidCount = Math.max(1, Math.floor(galaxyCount * 0.37));
+        const galaxyOuterCount = Math.max(1, galaxyCount - galaxyInnerCount - galaxyMidCount);
+
+        const galaxyStarsInner = createParticleLayer(createGalaxyLayer(galaxyInnerCount, false, 0.00, 0.36), {
           opacity: STAR_TUNING.galaxyOpacity,
-          rotationSpeed: 0.010,
+          rotationSpeed: 0.0145,
           verticalMotion: 0.0035,
+          twinkleSpeed: 0.48,
+        });
+
+        const galaxyStarsMid = createParticleLayer(createGalaxyLayer(galaxyMidCount, false, 0.30, 0.68), {
+          opacity: STAR_TUNING.galaxyOpacity,
+          rotationSpeed: 0.0085,
+          verticalMotion: 0.0033,
           twinkleSpeed: 0.46,
         });
 
-        const galaxyDust = createParticleLayer(createGalaxyLayer(dustCount, true), {
+        const galaxyStarsOuter = createParticleLayer(createGalaxyLayer(galaxyOuterCount, false, 0.62, 1.00), {
+          opacity: STAR_TUNING.galaxyOpacity,
+          rotationSpeed: 0.0042,
+          verticalMotion: 0.0030,
+          twinkleSpeed: 0.44,
+        });
+
+        const dustInnerCount = Math.max(1, Math.floor(dustCount * 0.46));
+        const dustMidCount = Math.max(1, Math.floor(dustCount * 0.34));
+        const dustOuterCount = Math.max(1, dustCount - dustInnerCount - dustMidCount);
+
+        const galaxyDustInner = createParticleLayer(createGalaxyLayer(dustInnerCount, true, 0.00, 0.42), {
           opacity: STAR_TUNING.dustOpacity,
-          rotationSpeed: 0.008,
-          verticalMotion: 0.002,
+          rotationSpeed: 0.0080,
+          verticalMotion: 0.0022,
+          twinkleSpeed: 0.24,
+        });
+
+        const galaxyDustMid = createParticleLayer(createGalaxyLayer(dustMidCount, true, 0.34, 0.72), {
+          opacity: STAR_TUNING.dustOpacity,
+          rotationSpeed: 0.0048,
+          verticalMotion: 0.0020,
           twinkleSpeed: 0.22,
         });
 
-        const core = createParticleLayer(createCoreLayer(coreCount), {
-          opacity: STAR_TUNING.coreOpacity,
-          rotationSpeed: 0.020,
-          verticalMotion: 0.003,
-          twinkleSpeed: 0.55,
+        const galaxyDustOuter = createParticleLayer(createGalaxyLayer(dustOuterCount, true, 0.66, 1.00), {
+          opacity: STAR_TUNING.dustOpacity,
+          rotationSpeed: 0.0024,
+          verticalMotion: 0.0018,
+          twinkleSpeed: 0.20,
         });
 
-        const clusters = createParticleLayer(createClusterLayer(clusterCount), {
+        const coreInnerCount = Math.max(1, Math.floor(coreCount * 0.62));
+        const coreOuterCount = Math.max(1, coreCount - coreInnerCount);
+
+        const coreInner = createParticleLayer(createCoreLayer(coreInnerCount, 0.00, 0.58), {
+          opacity: STAR_TUNING.coreOpacity,
+          rotationSpeed: 0.026,
+          verticalMotion: 0.0032,
+          twinkleSpeed: 0.58,
+        });
+
+        const coreOuter = createParticleLayer(createCoreLayer(coreOuterCount, 0.48, 1.00), {
+          opacity: STAR_TUNING.coreOpacity,
+          rotationSpeed: 0.014,
+          verticalMotion: 0.0028,
+          twinkleSpeed: 0.52,
+        });
+
+        const livingStreamCount = Math.max(1, Math.floor(clusterCount * 0.38));
+        const staticClusterCount = Math.max(1, clusterCount - livingStreamCount);
+        const streamHotspot = GALAXY_HOTSPOTS.find((hotspot) => hotspot.id === 'inner-arm');
+        const streamPosition = streamHotspot?.position ?? [4.10, 0.09, 1.40];
+        const streamAngle = -0.60;
+        const livingStream = createParticleLayer(createLivingStreamLayer(livingStreamCount), {
+          opacity: Math.min(1, STAR_TUNING.clusterOpacity * 1.06),
+          rotationSpeed: 0,
+          verticalMotion: 0.0040,
+          twinkleSpeed: 0.74,
+          flow: {
+            directionX: Math.cos(streamAngle),
+            directionZ: Math.sin(streamAngle),
+            speed: 0.62,
+            strength: 0.050,
+            lateralStrength: 0.016,
+          },
+        });
+        const livingStreamGroup = new THREE.Group();
+        livingStreamGroup.position.set(streamPosition[0], streamPosition[1], streamPosition[2]);
+        livingStreamGroup.add(livingStream);
+
+        const clusters = createParticleLayer(createClusterLayer(staticClusterCount), {
           opacity: STAR_TUNING.clusterOpacity,
-          // Cuna/Corriente are semantic landmarks. They must stay locked to their
-          // hotspot centers. The galaxy root still rotates, but this layer no
-          // longer performs a second independent orbit around the galactic core.
+          // Cuna remains locked to the semantic hotspot source of truth. Corriente
+          // is now a separate local group anchored to its own hotspot center.
           rotationSpeed: 0,
           verticalMotion: 0.0025,
           twinkleSpeed: 0.62,
@@ -1190,20 +1369,58 @@ export default function WebGPUInteractiveGalaxy({
 
         farStars.renderOrder = -5;
         nearStars.renderOrder = -3;
-        galaxyDust.renderOrder = 0;
-        galaxyStars.renderOrder = 1;
-        core.renderOrder = 2;
+        galaxyDustInner.renderOrder = 0;
+        galaxyDustMid.renderOrder = 0;
+        galaxyDustOuter.renderOrder = 0;
+        galaxyStarsInner.renderOrder = 1;
+        galaxyStarsMid.renderOrder = 1;
+        galaxyStarsOuter.renderOrder = 1;
+        coreInner.renderOrder = 2;
+        coreOuter.renderOrder = 2;
         clusters.renderOrder = 3;
-        root.add(farStars, nearStars, galaxyDust, galaxyStars, core, clusters);
+        livingStream.renderOrder = 4;
+        root.add(
+          farStars,
+          nearStars,
+          galaxyDustInner,
+          galaxyDustMid,
+          galaxyDustOuter,
+          galaxyStarsInner,
+          galaxyStarsMid,
+          galaxyStarsOuter,
+          coreInner,
+          coreOuter,
+          livingStreamGroup,
+          clusters,
+        );
+
+        const differentialLayers = [
+          galaxyDustInner,
+          galaxyDustMid,
+          galaxyDustOuter,
+          galaxyStarsInner,
+          galaxyStarsMid,
+          galaxyStarsOuter,
+          coreInner,
+          coreOuter,
+        ];
 
         const updateParticleScale = (zoom: number) => {
           const baseZoom = getBaseZoom();
           const zoomRatio = THREE.MathUtils.clamp(zoom / baseZoom, 0.20, 1);
           farStars.scale.setScalar(THREE.MathUtils.lerp(0.94, 1, zoomRatio));
           nearStars.scale.setScalar(THREE.MathUtils.lerp(0.92, 1, zoomRatio));
-          galaxyDust.scale.setScalar(THREE.MathUtils.lerp(0.98, 1, zoomRatio));
-          galaxyStars.scale.setScalar(THREE.MathUtils.lerp(0.985, 1, zoomRatio));
-          core.scale.setScalar(1);
+          const dustScale = THREE.MathUtils.lerp(0.98, 1, zoomRatio);
+          galaxyDustInner.scale.setScalar(dustScale);
+          galaxyDustMid.scale.setScalar(dustScale);
+          galaxyDustOuter.scale.setScalar(dustScale);
+          const starScale = THREE.MathUtils.lerp(0.985, 1, zoomRatio);
+          galaxyStarsInner.scale.setScalar(starScale);
+          galaxyStarsMid.scale.setScalar(starScale);
+          galaxyStarsOuter.scale.setScalar(starScale);
+          coreInner.scale.setScalar(1);
+          coreOuter.scale.setScalar(1);
+          livingStream.scale.setScalar(1);
           clusters.scale.setScalar(1);
         };
 
@@ -1287,9 +1504,8 @@ export default function WebGPUInteractiveGalaxy({
             farStars.visible = true;
             nearStars.visible = true;
             disc.visible = true;
-            galaxyDust.visible = true;
-            galaxyStars.visible = true;
-            core.visible = true;
+            differentialLayers.forEach((layer) => { layer.visible = true; });
+            livingStreamGroup.visible = true;
             clusters.visible = true;
             shootingStars.visible = true;
             return;
@@ -1304,9 +1520,8 @@ export default function WebGPUInteractiveGalaxy({
           farStars.visible = showDepth;
           nearStars.visible = showDepth;
           disc.visible = showGalaxy;
-          galaxyDust.visible = showGalaxy;
-          galaxyStars.visible = showGalaxy;
-          core.visible = showGalaxy;
+          differentialLayers.forEach((layer) => { layer.visible = showGalaxy; });
+          livingStreamGroup.visible = showGalaxy;
           clusters.visible = showGalaxy;
           shootingStars.visible = showShooting;
         };
@@ -1790,7 +2005,7 @@ export default function WebGPUInteractiveGalaxy({
           fps: Math.round(performanceSnapshot.fps),
         });
         setState('running');
-        setMessage('Renderer WebGPU interactivo listo: cinemática, hotspots, zoom, presentación y audio integrados.');
+        setMessage('Renderer WebGPU listo: movimiento diferencial por capas, hotspots, zoom, presentación y audio integrados.');
 
         cleanup = () => {
           renderer.setAnimationLoop(null);
@@ -1814,7 +2029,7 @@ export default function WebGPUInteractiveGalaxy({
           }
         };
       } catch (error) {
-        console.error('[Galaxy WebGPU Interactive Experience V3.6.7]', error);
+        console.error('[Galaxy WebGPU Interactive Experience V3.7.1]', error);
         setState('error');
         setMessage('WebGPU está disponible, pero la experiencia TSL no pudo inicializarse. Se activará el fallback WebGL2.');
         onFallback?.('error');
@@ -1960,7 +2175,7 @@ export default function WebGPUInteractiveGalaxy({
       {mode === 'candidate' && !cinematicActive && !explorationEnabled && (
         <div className="webgpuCandidateBadge">
           <div>
-            <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.6.7.3</span>
+            <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.7.1</span>
             <strong>WebGPU Direct Renderer</strong>
             <small>{message}</small>
           </div>
