@@ -17,32 +17,68 @@ export const GALAXY_HOTSPOTS: GalaxyHotspot[] = [
     shortLabel: 'Núcleo',
     description: 'Región central de mayor densidad, brillo y velocidad angular.',
     position: [0, 0.06, 0],
-    cameraTarget: [0.12, -0.12, 0],
-    zoom: 9.8,
+    cameraTarget: [0.02, 0.05, 0.02],
+    zoom: 1.55,
   },
   {
     id: 'inner-arm',
     label: 'Corriente estelar',
     shortLabel: 'Corriente',
-    description: 'Flujo de estrellas y polvo en el brazo derecho, con brillo joven y traza cósmica.',
-    position: [3.95, 0.05, 1.2],
-    cameraTarget: [2.45, 0.18, 0.72],
-    zoom: 10.9,
+    description: 'Flujo estelar curvo con traza luminosa, condensaciones jóvenes y halo difuso.',
+    position: [4.10, 0.09, 1.40],
+    cameraTarget: [4.10, 0.09, 1.40],
+    zoom: 1.16,
   },
   {
     id: 'cluster',
     label: 'Cuna estelar',
     shortLabel: 'Cuna estelar',
-    description: 'Región de formación estelar con brillo agrupado, gas tenue y pequeñas condensaciones luminosas.',
-    position: [-4.35, 0.12, -1.22],
-    cameraTarget: [-2.45, 0.22, -0.78],
-    zoom: 11.2,
+    description: 'Nebulosa de formación estelar con nubes difusas, cavidades luminosas y brotes jóvenes.',
+    position: [-4.66, 0.17, -0.92],
+    cameraTarget: [-4.66, 0.17, -0.92],
+    zoom: 1.20,
   },
 ];
 
 export const DEFAULT_CAMERA = {
-  target: [0.15, -0.08, 0] as [number, number, number],
-  zoom: 15.85,
-  yaw: 0,
-  pitch: 0.105,
+  target: [0.32, 0.10, -0.18] as [number, number, number],
+  zoom: 18.2,
+  yaw: -0.92,
+  pitch: 0.44,
 };
+
+/**
+ * Ajustes visuales centralizados para WebGPU/TSL.
+ * Modifica estos valores para probar brillo, glow e inclinación sin buscar
+ * constantes dispersas en el renderer.
+ */
+export const GALAXY_VISUAL_TUNING = {
+  stars: {
+    farOpacity: 1.0,
+    nearOpacity: 0.97,
+    galaxyOpacity: 0.92,
+    dustOpacity: 0.14,
+    coreOpacity: 0.92,
+    clusterOpacity: 0.80,
+    twinkleAmplitude: 0.030,
+    twinkleBase: 0.97,
+    spriteCoreWeight: 0.95,
+    spriteHaloWeight: 0.035,
+    spriteAmbientWeight: 0.006,
+  },
+  discGlow: {
+    coreColorWeight: 0.34,
+    innerColorWeight: 0.16,
+    filamentColorWeight: 0.08,
+    edgeOpacity: 0.075,
+    coreOpacity: 0.072,
+    innerOpacity: 0.028,
+    filamentOpacity: 0.020,
+  },
+  view: {
+    // Más negativo = inclina más el plano de la galaxia respecto a la cámara.
+    rootTiltX: -0.24,
+    // DEFAULT_CAMERA.pitch controla la elevación de la cámara base.
+  },
+} as const;
+

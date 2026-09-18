@@ -26,10 +26,8 @@ function hasWebGPU() {
 }
 
 /**
- * V3.0 deliberately keeps the production scene on WebGL2 while the legacy
- * ShaderMaterial layers are migrated to TSL. WebGPURenderer does not accept
- * those custom GLSL materials, so switching renderer early would break the
- * galaxy instead of evolving it.
+ * V3.5 promotes WebGPU to the preferred production backend. WebGL2 remains
+ * available as an automatic and explicitly addressable fallback.
  */
 export function detectGalaxyRendererCapabilities(): GalaxyRendererCapabilities {
   const webgpuAvailable = hasWebGPU();

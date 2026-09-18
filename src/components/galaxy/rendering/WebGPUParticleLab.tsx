@@ -250,7 +250,7 @@ export default function WebGPUParticleLab() {
       <div ref={mountRef} className="webgpuLabCanvas" />
 
       <div className="webgpuLabHud">
-        <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.1</span>
+        <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.2</span>
         <h1>WebGPU Particle Lab</h1>
         <p>{message}</p>
 

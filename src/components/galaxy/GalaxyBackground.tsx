@@ -37,7 +37,7 @@ type CinematicRuntime = {
 };
 
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.1.7-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.2-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 const MOBILE_BREAKPOINT = 640;

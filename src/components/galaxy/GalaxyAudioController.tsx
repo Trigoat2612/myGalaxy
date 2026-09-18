@@ -144,7 +144,7 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
   const fadeTo = useCallback(
     (audio: HTMLAudioElement, target: number, duration: number, onComplete?: () => void) => {
       cancelFade();
-      const startVolume = audio.volume;
+      const startVolume = clampVolume(audio.volume);
       const safeTarget = clampVolume(target);
       const startedAt = performance.now();
 
@@ -155,9 +155,14 @@ export default function GalaxyAudioController({ hidden = false }: { hidden?: boo
       }
 
       const tick = (now: number) => {
-        const progress = Math.min(1, (now - startedAt) / duration);
+        // requestAnimationFrame puede entregar un timestamp ligeramente menor
+        // que performance.now() al volver de una pestaña en segundo plano.
+        // Sin límite inferior, progress puede ser negativo y producir un
+        // audio.volume fuera del rango válido [0, 1].
+        const progress = Math.min(1, Math.max(0, (now - startedAt) / duration));
         const eased = 1 - Math.pow(1 - progress, 3);
-        audio.volume = startVolume + (safeTarget - startVolume) * eased;
+        const nextVolume = startVolume + (safeTarget - startVolume) * eased;
+        audio.volume = clampVolume(nextVolume);
 
         if (progress < 1) {
           fadeFrameRef.current = requestAnimationFrame(tick);

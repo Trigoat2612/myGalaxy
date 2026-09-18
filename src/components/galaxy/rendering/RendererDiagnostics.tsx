@@ -32,23 +32,35 @@ export default function RendererDiagnostics() {
       }}
       aria-live="polite"
     >
-      <strong style={{ display: 'block', color: '#fff' }}>Renderer · V3.1</strong>
+      <strong style={{ display: 'block', color: '#fff' }}>Renderer · V3.5</strong>
       <span>WebGPU: {capabilities.webgpuAvailable ? 'available' : 'unavailable'}</span>
       <br />
       <span>WebGL2: {capabilities.webgl2Available ? 'available' : 'unavailable'}</span>
       <br />
-      <span>Production: WebGL2 · stable scene</span>
+      <span>Active: WebGL2 · fallback/direct</span>
       <br />
+      <a
+        href="/webgpu-galaxy"
+        style={{
+          display: 'inline-block',
+          marginTop: 5,
+          marginRight: 8,
+          color: '#dce8ff',
+          pointerEvents: 'auto',
+        }}
+      >
+        Open WebGPU Direct
+      </a>
       <a
         href="/webgpu-lab"
         style={{
           display: 'inline-block',
           marginTop: 5,
-          color: '#dce8ff',
+          color: '#b9caef',
           pointerEvents: 'auto',
         }}
       >
-        Open WebGPU Lab
+        Particle Lab
       </a>
     </aside>
   );

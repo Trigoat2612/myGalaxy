@@ -1,9 +1,7 @@
 /**
- * WebGPU renderer factory for the TSL migration path.
- *
- * This module is intentionally lazy-loaded. V3.0 keeps the live galaxy on the
- * stable WebGL2 renderer because several visual layers still use ShaderMaterial.
- * V3.1 can start consuming this factory as those layers are ported to TSL.
+ * Lazy WebGPU renderer factory used by the production TSL path and labs.
+ * Keeping the import lazy avoids loading the WebGPU renderer on WebGL2 fallback
+ * sessions that do not need it.
  */
 export async function createGalaxyWebGPURenderer(canvas?: HTMLCanvasElement) {
   const { WebGPURenderer } = await import('three/webgpu');

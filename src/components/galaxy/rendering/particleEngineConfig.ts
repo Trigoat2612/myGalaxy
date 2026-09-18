@@ -9,22 +9,22 @@ export type GPUParticleProfile = {
 
 export const GPU_PARTICLE_PROFILES: Record<GPUParticleQuality, GPUParticleProfile> = {
   low: {
-    count: 18000,
+    count: 196000,
     radiusMin: 5,
     radiusMax: 25,
-    pixelRatioMax: 1,
+    pixelRatioMax: 1.18,
   },
   balanced: {
-    count: 42000,
+    count: 258000,
     radiusMin: 5,
     radiusMax: 28,
-    pixelRatioMax: 1.25,
+    pixelRatioMax: 1.38,
   },
   high: {
-    count: 72000,
+    count: 344000,
     radiusMin: 5,
     radiusMax: 31,
-    pixelRatioMax: 1.4,
+    pixelRatioMax: 1.52,
   },
 };
 
