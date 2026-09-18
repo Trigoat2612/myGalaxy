@@ -3,7 +3,7 @@ import type { CinematicStage } from '../GalaxyCinematicOverlay';
 
 export type ZoomBand = 'overview' | 'exploration' | 'close' | 'macro';
 
-type BackgroundLayerConfig = {
+export type BackgroundLayerConfig = {
   count: number;
   pointSize: number;
   opacity: number;
@@ -14,6 +14,10 @@ type BackgroundLayerConfig = {
   driftX: number;
   driftY: number;
   seedOffset: number;
+  distribution: 'halo' | 'disc';
+  verticalScale: number;
+  radialBias: number;
+  rotationSpeed: number;
 };
 
 export type AdaptiveSceneProfile = {
@@ -67,7 +71,7 @@ export function getAdaptiveSceneProfile({
   const isTablet = width >= 640 && width < 1024;
 
   const base = isMobile
-    ? { galaxy: 15800, dust: 2100, background: 2100, shooting: 1, nebula: 0.22 }
+    ? { galaxy: 17200, dust: 2300, background: 3000, shooting: 1, nebula: 0.26 }
     : isTablet
       ? { galaxy: 25000, dust: 3600, background: 2500, shooting: 2, nebula: 0.24 }
       : { galaxy: 35200, dust: 5200, background: 3200, shooting: 4, nebula: 0.26 };
@@ -92,64 +96,84 @@ export function getAdaptiveSceneProfile({
 
   const backgroundLayers: BackgroundLayerConfig[] = [
     {
-      count: Math.max(240, Math.round(background * 0.16)),
-      pointSize: isMobile ? 1.1 : 1.3,
-      opacity: 0.2,
-      color: '#8ea6cf',
-      radiusMin: 44,
-      radiusMax: 66,
-      offsetY: 5.6,
-      driftX: 0.04,
-      driftY: 0.026,
-      seedOffset: 3001,
-    },
-    {
-      count: Math.max(320, Math.round(background * 0.24)),
-      pointSize: isMobile ? 1.35 : 1.55,
-      opacity: 0.26,
-      color: '#b2c4e7',
-      radiusMin: 36,
-      radiusMax: 56,
-      offsetY: 2.8,
-      driftX: 0.07,
-      driftY: 0.045,
-      seedOffset: 4003,
-    },
-    {
-      count: Math.max(360, Math.round(background * 0.28)),
-      pointSize: isMobile ? 1.75 : 2.05,
-      opacity: 0.34,
-      color: '#d2def5',
-      radiusMin: 28,
-      radiusMax: 46,
-      offsetY: 0,
-      driftX: 0.12,
-      driftY: 0.08,
-      seedOffset: 5009,
-    },
-    {
-      count: Math.max(320, Math.round(background * 0.2)),
-      pointSize: isMobile ? 1.55 : 1.9,
-      opacity: 0.28,
-      color: '#c4d7ff',
-      radiusMin: 26,
-      radiusMax: 44,
-      offsetY: -2.6,
-      driftX: 0.1,
-      driftY: 0.07,
-      seedOffset: 6007,
-    },
-    {
       count: Math.max(220, Math.round(background * 0.12)),
-      pointSize: isMobile ? 1.2 : 1.45,
-      opacity: 0.21,
+      pointSize: isMobile ? 1.08 : 1.15,
+      opacity: isMobile ? 0.22 : 0.18,
+      color: '#8ea6cf',
+      radiusMin: 46,
+      radiusMax: 72,
+      offsetY: 8.4,
+      driftX: 0.035,
+      driftY: 0.024,
+      seedOffset: 3001,
+      distribution: 'halo',
+      verticalScale: 0.62,
+      radialBias: 0.72,
+      rotationSpeed: 0.015,
+    },
+    {
+      count: Math.max(280, Math.round(background * 0.18)),
+      pointSize: isMobile ? 1.22 : 1.32,
+      opacity: isMobile ? 0.24 : 0.2,
+      color: '#a6bbdf',
+      radiusMin: 38,
+      radiusMax: 60,
+      offsetY: 4.6,
+      driftX: 0.055,
+      driftY: 0.034,
+      seedOffset: 4013,
+      distribution: 'disc',
+      verticalScale: 0.18,
+      radialBias: 1.16,
+      rotationSpeed: 0.03,
+    },
+    {
+      count: Math.max(380, Math.round(background * 0.28)),
+      pointSize: isMobile ? 1.52 : 1.7,
+      opacity: isMobile ? 0.32 : 0.28,
+      color: '#d2def5',
+      radiusMin: 24,
+      radiusMax: 44,
+      offsetY: 0,
+      driftX: 0.095,
+      driftY: 0.068,
+      seedOffset: 5009,
+      distribution: 'disc',
+      verticalScale: 0.1,
+      radialBias: 1.28,
+      rotationSpeed: 0.05,
+    },
+    {
+      count: Math.max(320, Math.round(background * 0.22)),
+      pointSize: isMobile ? 1.42 : 1.55,
+      opacity: isMobile ? 0.28 : 0.24,
+      color: '#c4d7ff',
+      radiusMin: 28,
+      radiusMax: 50,
+      offsetY: -3.8,
+      driftX: 0.082,
+      driftY: 0.058,
+      seedOffset: 6011,
+      distribution: 'disc',
+      verticalScale: 0.14,
+      radialBias: 1.08,
+      rotationSpeed: -0.04,
+    },
+    {
+      count: Math.max(260, Math.round(background * 0.2)),
+      pointSize: isMobile ? 1.14 : 1.24,
+      opacity: isMobile ? 0.24 : 0.2,
       color: '#9bb4de',
       radiusMin: 34,
       radiusMax: 58,
-      offsetY: -5.2,
-      driftX: 0.06,
-      driftY: 0.038,
+      offsetY: -7.6,
+      driftX: 0.05,
+      driftY: 0.03,
       seedOffset: 7001,
+      distribution: 'halo',
+      verticalScale: 0.58,
+      radialBias: 0.76,
+      rotationSpeed: -0.018,
     },
   ];
 

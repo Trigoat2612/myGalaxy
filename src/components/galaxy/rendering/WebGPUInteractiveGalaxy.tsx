@@ -607,8 +607,14 @@ export default function WebGPUInteractiveGalaxy({
           const sizes = new Float32Array(count);
           const phases = new Float32Array(count);
 
-          const streamCenter = { x: 4.10, y: 0.09, z: 1.40 };
-          const cradleCenter = { x: -4.66, y: 0.17, z: -0.92 };
+          // Use the exact same source of truth as the hotspot markers/camera targets.
+          // This prevents visual features from slowly diverging from their labels/centers.
+          const streamHotspot = GALAXY_HOTSPOTS.find((hotspot) => hotspot.id === 'inner-arm');
+          const cradleHotspot = GALAXY_HOTSPOTS.find((hotspot) => hotspot.id === 'cluster');
+          const streamPosition = streamHotspot?.position ?? [4.10, 0.09, 1.40];
+          const cradlePosition = cradleHotspot?.position ?? [-4.66, 0.17, -0.92];
+          const streamCenter = { x: streamPosition[0], y: streamPosition[1], z: streamPosition[2] };
+          const cradleCenter = { x: cradlePosition[0], y: cradlePosition[1], z: cradlePosition[2] };
           const streamAngle = -0.60;
           const streamDirX = Math.cos(streamAngle);
           const streamDirZ = Math.sin(streamAngle);
@@ -997,8 +1003,11 @@ export default function WebGPUInteractiveGalaxy({
 
         const clusters = createParticleLayer(createClusterLayer(clusterCount), {
           opacity: STAR_TUNING.clusterOpacity,
-          rotationSpeed: 0.008,
-          verticalMotion: 0.004,
+          // Cuna/Corriente are semantic landmarks. They must stay locked to their
+          // hotspot centers. The galaxy root still rotates, but this layer no
+          // longer performs a second independent orbit around the galactic core.
+          rotationSpeed: 0,
+          verticalMotion: 0.0025,
           twinkleSpeed: 0.62,
         });
 
@@ -1203,7 +1212,7 @@ export default function WebGPUInteractiveGalaxy({
           const dy = event.clientY - previousY;
           previousX = event.clientX;
           previousY = event.clientY;
-          interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw - dx * 0.0036, -0.9, 0.9);
+          interaction.targetYaw -= dx * 0.0036;
           interaction.targetPitch = THREE.MathUtils.clamp(interaction.targetPitch + dy * 0.0032, -0.18, 0.42);
         };
 
@@ -1248,10 +1257,10 @@ export default function WebGPUInteractiveGalaxy({
           let handled = true;
           switch (event.key) {
             case 'ArrowLeft':
-              interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw + 0.08, -0.9, 0.9);
+              interaction.targetYaw += 0.08;
               break;
             case 'ArrowRight':
-              interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw - 0.08, -0.9, 0.9);
+              interaction.targetYaw -= 0.08;
               break;
             case 'ArrowUp':
               interaction.targetPitch = THREE.MathUtils.clamp(interaction.targetPitch - 0.055, -0.18, 0.42);

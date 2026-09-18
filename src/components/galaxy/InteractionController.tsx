@@ -144,11 +144,9 @@ export default function InteractionController({
       previousX = event.clientX;
       previousY = event.clientY;
 
-      interaction.targetYaw = THREE.MathUtils.clamp(
-        interaction.targetYaw - dx * 0.0036,
-        -0.9,
-        0.9,
-      );
+      // Horizontal orbit is intentionally unbounded: the camera can now
+      // complete full 360° turns (and continue rotating) in either direction.
+      interaction.targetYaw -= dx * 0.0036;
       interaction.targetPitch = THREE.MathUtils.clamp(
         interaction.targetPitch + dy * 0.0032,
         -0.18,
@@ -206,10 +204,10 @@ export default function InteractionController({
 
       switch (event.key) {
         case 'ArrowLeft':
-          interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw + 0.08, -0.9, 0.9);
+          interaction.targetYaw += 0.08;
           break;
         case 'ArrowRight':
-          interaction.targetYaw = THREE.MathUtils.clamp(interaction.targetYaw - 0.08, -0.9, 0.9);
+          interaction.targetYaw -= 0.08;
           break;
         case 'ArrowUp':
           interaction.targetPitch = THREE.MathUtils.clamp(interaction.targetPitch - 0.055, -0.18, 0.42);

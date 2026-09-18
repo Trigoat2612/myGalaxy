@@ -5,21 +5,27 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { nebulaFragmentShader, nebulaVertexShader } from './shaders';
+import type { GalaxyVisualProfileSettings } from './visualProfiles';
 
 export default function NebulaShader({
   animate,
   opacity = 0.72,
+  visualProfile,
 }: {
   animate: boolean;
   opacity?: number;
+  visualProfile: GalaxyVisualProfileSettings;
 }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
       uOpacity: { value: opacity },
+      uBrightness: { value: visualProfile.nebulaBrightness },
+      uSaturation: { value: visualProfile.nebulaSaturation },
+      uTint: { value: visualProfile.nebulaTint },
     }),
-    [opacity],
+    [opacity, visualProfile],
   );
 
   useFrame((state) => {

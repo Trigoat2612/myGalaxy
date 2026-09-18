@@ -13,6 +13,7 @@ export const galaxyVertexShader = /* glsl */ `
   varying vec3 vColor;
   varying float vTwinkle;
   varying float vOpacity;
+  varying float vScale;
 
   void main() {
     vec3 transformed = position;
@@ -37,12 +38,13 @@ export const galaxyVertexShader = /* glsl */ `
 
     gl_PointSize = max(
       0.9,
-      aScale * uPointSize * uPixelRatio * perspective * twinkle * mix(1.0, 0.72, uZoomDetail)
+      aScale * uPointSize * uPixelRatio * perspective * twinkle * mix(1.0, 0.58, uZoomDetail)
     );
 
     vColor = color;
     vTwinkle = twinkle;
     vOpacity = aOpacity;
+    vScale = aScale;
   }
 `;
 
@@ -50,10 +52,15 @@ export const galaxyFragmentShader = /* glsl */ `
   uniform float uOpacity;
   uniform float uDust;
   uniform float uZoomDetail;
+  uniform float uBrightness;
+  uniform float uSaturation;
+  uniform float uWarmth;
+  uniform float uBloomBoost;
 
   varying vec3 vColor;
   varying float vTwinkle;
   varying float vOpacity;
+  varying float vScale;
 
   void main() {
     vec2 point = gl_PointCoord - 0.5;
@@ -61,27 +68,34 @@ export const galaxyFragmentShader = /* glsl */ `
 
     if (distanceToCenter > 0.5) discard;
 
-    float coreEdge = mix(0.082, 0.058, uZoomDetail);
-    float midEdge = mix(0.24, 0.19, uZoomDetail);
-    float haloStart = mix(0.16, 0.20, uZoomDetail);
+    float coreEdge = mix(0.082, 0.044, uZoomDetail);
+    float midEdge = mix(0.24, 0.16, uZoomDetail);
+    float haloStart = mix(0.16, 0.23, uZoomDetail);
 
     float core = 1.0 - smoothstep(0.0, coreEdge, distanceToCenter);
     float midGlow = 1.0 - smoothstep(0.02, midEdge, distanceToCenter);
     float halo = 1.0 - smoothstep(haloStart, 0.5, distanceToCenter);
 
-    float haloWeight = mix(0.28, 0.15, uZoomDetail);
-    float midWeight = mix(0.40, 0.32, uZoomDetail);
-    float coreWeight = mix(0.50, 0.62, uZoomDetail);
+    float haloWeight = mix(0.28, 0.08, uZoomDetail);
+    float midWeight = mix(0.40, 0.24, uZoomDetail);
+    float coreWeight = mix(0.50, 0.76, uZoomDetail);
 
-    float alpha = (halo * haloWeight + midGlow * midWeight + core * coreWeight) * uOpacity * vOpacity;
+    float scaleMask = clamp((vScale - 0.75) / 0.95, 0.0, 1.0);
+    float selectiveBloom = halo * scaleMask * mix(0.12, 0.24, uZoomDetail) * uBloomBoost;
+    float alpha = (halo * haloWeight + midGlow * midWeight + core * coreWeight + selectiveBloom) * uOpacity * vOpacity;
     vec3 finalColor = vColor *
-      (0.94 + core * mix(0.65, 0.92, uZoomDetail) + midGlow * 0.1) *
+      (0.94 + core * mix(0.65, 1.06, uZoomDetail) + midGlow * 0.08 + selectiveBloom * 0.42) *
       (0.97 + vTwinkle * 0.03);
 
     if (uDust > 0.5) {
       alpha *= 0.5;
       finalColor *= vec3(0.40, 0.36, 0.42);
     }
+
+    float luminance = dot(finalColor, vec3(0.2126, 0.7152, 0.0722));
+    finalColor = mix(vec3(luminance), finalColor, uSaturation);
+    finalColor = mix(finalColor, finalColor * vec3(1.07, 0.995, 0.94), uWarmth);
+    finalColor *= uBrightness;
 
     gl_FragColor = vec4(finalColor, alpha);
   }
@@ -99,6 +113,10 @@ export const galaxyDiscVertexShader = /* glsl */ `
 export const galaxyDiscFragmentShader = /* glsl */ `
   uniform float uTime;
   uniform float uOpacity;
+  uniform float uCoreContrast;
+  uniform float uBrightness;
+  uniform float uSaturation;
+  uniform float uWarmth;
 
   varying vec2 vUv;
 
@@ -160,7 +178,7 @@ export const galaxyDiscFragmentShader = /* glsl */ `
     float arms = smoothstep(0.56, 0.9, spiralWave) * exp(-r * 1.15) * edge;
 
     float dustNoise = smoothstep(0.68, 0.88, grain2 * 0.58 + grain3 * 0.42);
-    float dustLane = dustNoise * smoothstep(0.20, 0.38, r) * (1.0 - smoothstep(0.90, 1.0, r)) * 0.12;
+    float dustLane = dustNoise * smoothstep(0.20, 0.38, r) * (1.0 - smoothstep(0.90, 1.0, r)) * mix(0.12, 0.18, uCoreContrast);
 
     vec3 warmCore = vec3(1.0, 0.86, 0.68);
     vec3 coolInner = vec3(0.61, 0.71, 0.92);
@@ -169,12 +187,17 @@ export const galaxyDiscFragmentShader = /* glsl */ `
     vec3 color = mix(coolOuter, coolInner, clamp(1.0 - r, 0.0, 1.0));
     color = mix(color, warmCore, core * 0.9 + innerGlow * 0.2);
     color *= 0.78 + grain * 0.08 + arms * 0.02 + softFill * 0.03 + broadFill * 0.025 + veil * 0.03;
+    color = mix(color * 0.95, color * 1.08, uCoreContrast * (core * 0.55 + innerGlow * 0.2));
     color *= 1.0 - dustLane * 0.06;
+    float discLuminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    color = mix(vec3(discLuminance), color, uSaturation);
+    color = mix(color, color * vec3(1.06, 0.995, 0.95), uWarmth);
+    color *= uBrightness;
 
     float alpha = (
       disk * 0.11 +
-      core * 0.15 +
-      innerGlow * 0.08 +
+      core * mix(0.15, 0.18, uCoreContrast) +
+      innerGlow * mix(0.08, 0.10, uCoreContrast) +
       halo * 0.06 +
       arms * 0.006 +
       softFill * 0.14 +
@@ -191,21 +214,25 @@ export const starFieldVertexShader = /* glsl */ `
   uniform float uTime;
   uniform float uPixelRatio;
   uniform float uPointSize;
+  uniform float uZoomDetail;
 
   attribute float aScale;
   attribute float aPhase;
 
   varying float vTwinkle;
+  varying float vZoomDetail;
 
   void main() {
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mvPosition;
 
-    float twinkle = 0.8 + 0.2 * sin(uTime * (0.25 + aPhase * 0.014) + aPhase);
+    float twinkle = 0.84 + 0.16 * sin(uTime * (0.25 + aPhase * 0.014) + aPhase);
     float perspective = clamp(28.0 / max(1.0, -mvPosition.z), 0.22, 1.8);
+    float sharpnessScale = mix(1.0, 0.62, uZoomDetail);
 
-    gl_PointSize = max(0.9, aScale * uPointSize * uPixelRatio * perspective);
+    gl_PointSize = max(0.85, aScale * uPointSize * uPixelRatio * perspective * sharpnessScale);
     vTwinkle = twinkle;
+    vZoomDetail = uZoomDetail;
   }
 `;
 
@@ -214,6 +241,7 @@ export const starFieldFragmentShader = /* glsl */ `
   uniform float uOpacity;
 
   varying float vTwinkle;
+  varying float vZoomDetail;
 
   void main() {
     vec2 point = gl_PointCoord - 0.5;
@@ -221,11 +249,22 @@ export const starFieldFragmentShader = /* glsl */ `
 
     if (distanceToCenter > 0.5) discard;
 
-    float glow = 1.0 - smoothstep(0.16, 0.5, distanceToCenter);
-    float core = 1.0 - smoothstep(0.0, 0.09, distanceToCenter);
-    float alpha = (glow * 0.42 + core * 0.24) * uOpacity * (0.84 + vTwinkle * 0.16);
+    float coreEdge = mix(0.09, 0.05, vZoomDetail);
+    float glowEdge = mix(0.18, 0.12, vZoomDetail);
+    float haloStart = mix(0.14, 0.21, vZoomDetail);
 
-    gl_FragColor = vec4(uColor * (0.82 + core * 0.34), alpha);
+    float core = 1.0 - smoothstep(0.0, coreEdge, distanceToCenter);
+    float glow = 1.0 - smoothstep(0.0, glowEdge, distanceToCenter);
+    float halo = 1.0 - smoothstep(haloStart, 0.5, distanceToCenter);
+
+    float alpha = (
+      halo * mix(0.30, 0.10, vZoomDetail) +
+      glow * mix(0.32, 0.22, vZoomDetail) +
+      core * mix(0.28, 0.60, vZoomDetail)
+    ) * uOpacity * (0.86 + vTwinkle * 0.14);
+
+    vec3 finalColor = uColor * (0.82 + core * mix(0.28, 0.52, vZoomDetail));
+    gl_FragColor = vec4(finalColor, alpha);
   }
 `;
 
@@ -241,6 +280,9 @@ export const nebulaVertexShader = /* glsl */ `
 export const nebulaFragmentShader = /* glsl */ `
   uniform float uTime;
   uniform float uOpacity;
+  uniform float uBrightness;
+  uniform float uSaturation;
+  uniform float uTint;
 
   varying vec3 vDirection;
 
@@ -295,7 +337,11 @@ export const nebulaFragmentShader = /* glsl */ `
     vec3 mutedViolet = vec3(0.105, 0.075, 0.16);
 
     vec3 color = mix(deepBlue, mutedBlue, cloudB);
-    color = mix(color, mutedViolet, wisps * 0.18);
+    color = mix(color, mutedViolet, wisps * (0.18 + uTint * 0.32));
+
+    float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    color = mix(vec3(luminance), color, uSaturation);
+    color *= uBrightness;
 
     float alpha = (cloud * 0.14 + wisps * 0.035) * equator * uOpacity;
 

@@ -11,6 +11,7 @@ import GalaxyHotspots from './GalaxyHotspots';
 import type { GalaxyHotspotId } from './galaxyConfig';
 import type { InteractionState } from './InteractionController';
 import type { RefObject } from 'react';
+import type { GalaxyVisualProfileSettings } from './visualProfiles';
 import { galaxyFragmentShader, galaxyVertexShader } from './shaders';
 
 type GalaxyData = {
@@ -168,11 +169,13 @@ function ShaderPoints({
   dust = false,
   animate,
   interactionRef,
+  visualProfile,
 }: {
   count: number;
   dust?: boolean;
   animate: boolean;
   interactionRef: RefObject<InteractionState>;
+  visualProfile: GalaxyVisualProfileSettings;
 }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const gl = useThree((state) => state.gl);
@@ -186,8 +189,12 @@ function ShaderPoints({
       uOpacity: { value: dust ? 0.10 : 0.94 },
       uDust: { value: dust ? 1 : 0 },
       uZoomDetail: { value: 0 },
+      uBrightness: { value: dust ? visualProfile.starBrightness * 0.9 : visualProfile.starBrightness },
+      uSaturation: { value: dust ? 0.82 : visualProfile.starSaturation },
+      uWarmth: { value: dust ? visualProfile.starWarmth * 0.25 : visualProfile.starWarmth },
+      uBloomBoost: { value: dust ? 0.84 : visualProfile.starBloom },
     }),
-    [dust],
+    [dust, visualProfile],
   );
 
   useEffect(() => () => materialRef.current?.dispose(), []);
@@ -200,8 +207,8 @@ function ShaderPoints({
     material.uniforms.uPixelRatio.value = gl.getPixelRatio();
 
     const zoom = interactionRef.current?.zoom ?? 21.5;
-    const zoomDetail = THREE.MathUtils.clamp((12 - zoom) / 6.5, 0, 1);
-    material.uniforms.uZoomDetail.value = dust ? zoomDetail * 0.35 : zoomDetail;
+    const zoomDetail = THREE.MathUtils.clamp((14 - zoom) / 8.5, 0, 1);
+    material.uniforms.uZoomDetail.value = dust ? zoomDetail * 0.28 : zoomDetail;
   });
 
   return (
@@ -235,6 +242,7 @@ export default function GalaxyShader({
   dust,
   animate,
   explorationEnabled,
+  visualProfile,
   selectedHotspot,
   onSelectHotspot,
   interactionRef,
@@ -243,17 +251,18 @@ export default function GalaxyShader({
   dust: number;
   animate: boolean;
   explorationEnabled: boolean;
+  visualProfile: GalaxyVisualProfileSettings;
   selectedHotspot: GalaxyHotspotId | null;
   onSelectHotspot: (id: GalaxyHotspotId) => void;
   interactionRef: RefObject<InteractionState>;
 }) {
   return (
     <group rotation={[0.72, 0.04, -0.18]} scale={[1.26, 1.0, 0.74]} position={[0.08, -0.18, 0]}>
-      <GalaxyDisc animate={animate} />
-      <GalacticCore animate={animate} />
-      <ShaderPoints count={stars} animate={animate} interactionRef={interactionRef} />
-      <StarClusters count={Math.max(260, Math.round(stars * 0.034))} animate={animate} interactionRef={interactionRef} />
-      <ShaderPoints count={dust} dust animate={animate} interactionRef={interactionRef} />
+      <GalaxyDisc animate={animate} interactionRef={interactionRef} visualProfile={visualProfile} />
+      <GalacticCore animate={animate} interactionRef={interactionRef} visualProfile={visualProfile} />
+      <ShaderPoints count={stars} animate={animate} interactionRef={interactionRef} visualProfile={visualProfile} />
+      <StarClusters count={Math.max(260, Math.round(stars * 0.034))} animate={animate} interactionRef={interactionRef} visualProfile={visualProfile} />
+      <ShaderPoints count={dust} dust animate={animate} interactionRef={interactionRef} visualProfile={visualProfile} />
       <GalaxyHotspots
         enabled={explorationEnabled}
         selected={selectedHotspot}

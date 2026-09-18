@@ -160,7 +160,7 @@ function StarBillboard({
   });
 
   return (
-    <Billboard position={position} follow>
+    <group position={position}>
       <mesh>
         <planeGeometry args={[size, size]} />
         <shaderMaterial
@@ -175,7 +175,7 @@ function StarBillboard({
           toneMapped={false}
         />
       </mesh>
-    </Billboard>
+    </group>
   );
 }
 
@@ -215,7 +215,7 @@ function NebulaPuff({
   });
 
   return (
-    <Billboard position={position} follow>
+    <group position={position}>
       <mesh rotation={[0, 0, rotation]}>
         <planeGeometry args={size} />
         <shaderMaterial
@@ -230,7 +230,7 @@ function NebulaPuff({
           toneMapped={false}
         />
       </mesh>
-    </Billboard>
+    </group>
   );
 }
 
@@ -270,7 +270,6 @@ function CoreMarker({ selected }: { selected: boolean }) {
 }
 
 function StellarStreamMarker({ selected }: { selected: boolean }) {
-  const groupRef = useRef<THREE.Group>(null);
   const points = useMemo(
     () => [
       { pos: [-0.22, -0.08, 0.0] as [number, number, number], size: 0.11, core: '#b9ceff', halo: '#7fa1ff', opacity: 0.52, seed: 2.0 },
@@ -282,13 +281,9 @@ function StellarStreamMarker({ selected }: { selected: boolean }) {
     [],
   );
 
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.4) * 0.08 - 0.35;
-  });
 
   return (
-    <group ref={groupRef}>
+    <group rotation={[0, 0, -0.35]}>
       <NebulaPuff size={[0.9, 0.26]} colorA="#5573d1" colorB="#9ab0ff" opacity={selected ? 0.26 : 0.18} seed={2.3} rotation={-0.18} />
       <NebulaPuff size={[0.54, 0.18]} colorA="#8aa5ff" colorB="#d8e4ff" opacity={selected ? 0.22 : 0.14} seed={3.1} position={[0.04, 0.01, 0.0]} rotation={-0.18} />
       {points.map((point) => (
@@ -308,7 +303,6 @@ function StellarStreamMarker({ selected }: { selected: boolean }) {
 }
 
 function StellarNurseryMarker({ selected }: { selected: boolean }) {
-  const groupRef = useRef<THREE.Group>(null);
   const sparks = useMemo(
     () => [
       { pos: [0.0, 0.0, 0.03] as [number, number, number], size: 0.17, core: '#fff2d8', halo: '#d8e4ff', opacity: 0.78, seed: 4.0 },
@@ -320,13 +314,9 @@ function StellarNurseryMarker({ selected }: { selected: boolean }) {
     [],
   );
 
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    groupRef.current.rotation.z = state.clock.elapsedTime * 0.08;
-  });
 
   return (
-    <group ref={groupRef}>
+    <group rotation={[0, 0, -0.35]}>
       <NebulaPuff size={[0.72, 0.54]} colorA="#596fc9" colorB="#a6b7ff" opacity={selected ? 0.26 : 0.18} seed={4.2} />
       <NebulaPuff size={[0.52, 0.42]} colorA="#7086dd" colorB="#d8e4ff" opacity={selected ? 0.18 : 0.11} seed={5.1} position={[0.06, 0.02, 0.01]} rotation={0.4} />
       {sparks.map((spark) => (
@@ -378,21 +368,23 @@ function Hotspot({
 
   return (
     <group ref={groupRef} position={position}>
-      <group
-        onClick={(event) => {
-          event.stopPropagation();
-          onSelect(id);
-        }}
-        onPointerOver={(event) => {
-          event.stopPropagation();
-          document.body.style.cursor = 'pointer';
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = '';
-        }}
-      >
-        <Marker id={id} selected={selected} />
-      </group>
+      <Billboard follow>
+        <group
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(id);
+          }}
+          onPointerOver={(event) => {
+            event.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = '';
+          }}
+        >
+          <Marker id={id} selected={selected} />
+        </group>
+      </Billboard>
 
       <Html
         center

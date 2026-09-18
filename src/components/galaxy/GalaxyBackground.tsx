@@ -19,9 +19,11 @@ import {
   type GalaxyHotspotId,
 } from './galaxyConfig';
 import RendererDiagnostics from './rendering/RendererDiagnostics';
+import GalaxyVisualProfileOverlay from './GalaxyVisualProfileOverlay';
 import { detectGalaxyRendererCapabilities } from './rendering/rendererCapabilities';
 import { getAdaptiveSceneProfile, resolveZoomBand, type ZoomBand } from './rendering/adaptiveSceneProfile';
 import type { QualityLevel } from './types';
+import { GALAXY_VISUAL_PROFILES, type GalaxyVisualProfileId } from './visualProfiles';
 import styles from './GalaxyBackground.module.css';
 
 type PointerPosition = {
@@ -39,6 +41,7 @@ type CinematicRuntime = {
 const CINEMATIC_DURATION = 4.85;
 const CINEMATIC_SESSION_KEY = 'galaxy-cinematic-v3.2-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
+const VISUAL_PROFILE_STORAGE_KEY = 'galaxy-visual-profile-v3.6.4';
 
 const MOBILE_BREAKPOINT = 640;
 const MOBILE_CAMERA_ZOOM = 21.5;
@@ -431,6 +434,7 @@ function ResponsiveScene({
   onCinematicComplete,
   maxDpr,
   zoomBand,
+  visualProfileId,
 }: {
   quality: QualityLevel;
   animate: boolean;
@@ -445,6 +449,7 @@ function ResponsiveScene({
   onCinematicComplete: () => void;
   maxDpr: number;
   zoomBand: ZoomBand;
+  visualProfileId: GalaxyVisualProfileId;
 }) {
   const { size } = useThree();
   const profile = useMemo(() => getAdaptiveSceneProfile({
@@ -455,6 +460,22 @@ function ResponsiveScene({
     cinematicStage,
   }), [size.width, quality, zoomBand, explorationEnabled, cinematicStage]);
   const galaxyScale = getResponsiveGalaxyScale(size.width);
+  const visualProfile = useMemo(() => {
+    const baseProfile = GALAXY_VISUAL_PROFILES[visualProfileId];
+    const isMobile = size.width < MOBILE_BREAKPOINT;
+
+    if (!isMobile) return baseProfile;
+
+    return {
+      ...baseProfile,
+      starBrightness: baseProfile.starBrightness * 1.18,
+      starBloom: baseProfile.starBloom * 1.08,
+      discBrightness: baseProfile.discBrightness * 1.22,
+      discContrast: baseProfile.discContrast * 1.08,
+      coreBrightness: baseProfile.coreBrightness * 1.12,
+      nebulaBrightness: baseProfile.nebulaBrightness * 1.14,
+    };
+  }, [visualProfileId, size.width]);
   const introActive = cinematicRef.current?.active ?? false;
 
   const showDepth = !introActive || cinematicStage !== 'loading';
@@ -481,8 +502,8 @@ function ResponsiveScene({
         onCinematicProgress={onCinematicProgress}
         onCinematicComplete={onCinematicComplete}
       />
-      {showNebula && <NebulaShader animate={animate} opacity={profile.nebula} />}
-      {showDepth && <DepthStarLayers layers={profile.backgroundLayers} animate={animate} pointerRef={pointerRef} />}
+      {showNebula && <NebulaShader animate={animate} opacity={profile.nebula} visualProfile={visualProfile} />}
+      {showDepth && <DepthStarLayers layers={profile.backgroundLayers} animate={animate} pointerRef={pointerRef} interactionRef={interactionRef} />}
       {showGalaxy && (
         <group scale={galaxyScale}>
           <GalaxyShader
@@ -493,6 +514,7 @@ function ResponsiveScene({
             selectedHotspot={selectedHotspot}
             onSelectHotspot={onSelectHotspot}
             interactionRef={interactionRef}
+            visualProfile={visualProfile}
           />
         </group>
       )}
@@ -533,6 +555,7 @@ export default function GalaxyBackground() {
   const [cinematicStage, setCinematicStage] = useState<CinematicStage>('loading');
   const [cinematicProgress, setCinematicProgress] = useState(0);
   const [presentationActive, setPresentationActive] = useState(false);
+  const [visualProfileId, setVisualProfileId] = useState<GalaxyVisualProfileId>('cinematic');
 
   useEffect(() => {
     const alreadySeen = sessionStorage.getItem(CINEMATIC_SESSION_KEY) === '1';
@@ -547,6 +570,17 @@ export default function GalaxyBackground() {
     setCinematicStage(shouldPlay ? 'loading' : 'complete');
     setCinematicProgress(shouldPlay ? 0 : 1);
   }, [reducedMotion]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(VISUAL_PROFILE_STORAGE_KEY);
+    if (stored === 'cinematic' || stored === 'realistic' || stored === 'vibrant') {
+      setVisualProfileId(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(VISUAL_PROFILE_STORAGE_KEY, visualProfileId);
+  }, [visualProfileId]);
 
   useEffect(() => {
     document.body.classList.toggle('galaxy-exploring', explorationEnabled);
@@ -733,6 +767,7 @@ export default function GalaxyBackground() {
               onCinematicComplete={finishCinematic}
               maxDpr={maxDpr}
               zoomBand={zoomBand}
+              visualProfileId={visualProfileId}
             />
           </PerformanceMonitor>
         </Canvas>
@@ -762,6 +797,12 @@ export default function GalaxyBackground() {
           onTogglePresentation={togglePresentation}
         />
       </div>
+
+      <GalaxyVisualProfileOverlay
+        value={visualProfileId}
+        onChange={setVisualProfileId}
+        hidden={cinematicActive}
+      />
 
       <RendererDiagnostics />
     </>

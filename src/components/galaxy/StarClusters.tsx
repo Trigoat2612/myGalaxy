@@ -6,6 +6,7 @@ import * as THREE from 'three';
 
 import { galaxyFragmentShader, galaxyVertexShader } from './shaders';
 import type { InteractionState } from './InteractionController';
+import type { GalaxyVisualProfileSettings } from './visualProfiles';
 
 function createRandom(seed = 44017) {
   return () => {
@@ -24,10 +25,12 @@ export default function StarClusters({
   count,
   animate,
   interactionRef,
+  visualProfile,
 }: {
   count: number;
   animate: boolean;
   interactionRef: RefObject<InteractionState>;
+  visualProfile: GalaxyVisualProfileSettings;
 }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const gl = useThree((state) => state.gl);
@@ -106,8 +109,12 @@ export default function StarClusters({
       uOpacity: { value: 0.72 },
       uDust: { value: 0 },
       uZoomDetail: { value: 0 },
+      uBrightness: { value: visualProfile.starBrightness * 1.02 },
+      uSaturation: { value: visualProfile.starSaturation },
+      uWarmth: { value: visualProfile.starWarmth },
+      uBloomBoost: { value: visualProfile.starBloom * 1.06 },
     }),
-    [],
+    [visualProfile],
   );
 
   useEffect(() => () => materialRef.current?.dispose(), []);
@@ -118,7 +125,7 @@ export default function StarClusters({
     materialRef.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
 
     const zoom = interactionRef.current?.zoom ?? 21.5;
-    materialRef.current.uniforms.uZoomDetail.value = THREE.MathUtils.clamp((12 - zoom) / 6.5, 0, 1);
+    materialRef.current.uniforms.uZoomDetail.value = THREE.MathUtils.clamp((14 - zoom) / 8.5, 0, 1);
   });
 
   return (

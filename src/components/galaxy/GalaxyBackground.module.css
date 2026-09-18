@@ -860,3 +860,92 @@
     font-size: 7px;
   }
 }
+
+
+.profileUi {
+  position: fixed;
+  top: clamp(12px, 2vw, 22px);
+  left: clamp(12px, 2vw, 22px);
+  z-index: 62;
+  pointer-events: none;
+}
+
+.profilePanel {
+  pointer-events: auto;
+  width: min(320px, calc(100vw - 24px));
+  padding: 14px 15px;
+  border: 1px solid rgba(198, 215, 250, 0.12);
+  border-radius: 18px;
+  background: rgba(4, 8, 20, 0.66);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+  animation: explorerPanelIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profileEyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(199, 214, 244, 0.56);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.profilePanel strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #f5f8ff;
+  font-size: 0.92rem;
+}
+
+.profileMeta {
+  margin: 0 0 12px;
+  color: rgba(228, 235, 250, 0.64);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.profileButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profileButton,
+.profileButtonActive {
+  border: 1px solid rgba(220, 229, 249, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(226, 234, 250, 0.66);
+  font: inherit;
+  font-size: 0.72rem;
+  padding: 8px 11px;
+  cursor: pointer;
+  transition: transform 160ms ease, color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.profileButton:hover,
+.profileButtonActive {
+  transform: translateY(-1px);
+  border-color: rgba(185, 208, 255, 0.32);
+  background: rgba(124, 159, 222, 0.12);
+  color: #f4f7ff;
+}
+
+@media (max-width: 720px) {
+  .profileUi {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: 58px;
+  }
+
+  .profilePanel {
+    width: 100%;
+    padding: 12px 13px;
+  }
+
+  .profileButtons {
+    gap: 7px;
+  }
+}

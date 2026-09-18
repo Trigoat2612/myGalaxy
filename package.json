@@ -1,6 +1,6 @@
 {
-  "name": "galaxia-responsive-v3-6-adaptive-lod",
-  "version": "3.6.0",
+  "name": "galaxia-responsive-v3-6-4-2-hotspot-lock-360-orbit",
+  "version": "3.6.4.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
