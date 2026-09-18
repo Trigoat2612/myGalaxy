@@ -9,6 +9,8 @@ import GalaxyPhotoModeOverlay, { type PhotoPreset } from '../GalaxyPhotoModeOver
 import { DEFAULT_CAMERA, GALAXY_HOTSPOTS, GALAXY_VISUAL_TUNING, type GalaxyHotspotId } from '../galaxyConfig';
 import styles from '../GalaxyBackground.module.css';
 
+import { ADAPTIVE_RENDER_SCALE, AdaptivePerformanceTracker, type AdaptivePerformanceTier } from './adaptivePerformance';
+
 import {
   GPU_PARTICLE_PROFILES,
   detectGPUParticleQuality,
@@ -22,6 +24,8 @@ type MigrationStats = {
   quality: GPUParticleQuality;
   stars: number;
   migratedLayers: number;
+  performanceTier: AdaptivePerformanceTier;
+  fps: number;
 };
 
 type LayerData = {
@@ -57,6 +61,8 @@ type ActivePointer = {
   pointerType: string;
 };
 
+type PerformanceMode = 'auto' | AdaptivePerformanceTier;
+
 type CinematicRuntime = {
   active: boolean;
   startedAt: number | null;
@@ -73,7 +79,8 @@ const DESKTOP_MIN_ZOOM = 0.40;
 const MOBILE_MAX_ZOOM = 36;
 const DESKTOP_MAX_ZOOM = 28;
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-webgpu-cinematic-v3.6.0-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-webgpu-cinematic-v3.6.7-seen';
+const PERFORMANCE_MODE_STORAGE_KEY = 'galaxy-performance-mode-v3.6.7';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 const STAR_TUNING = GALAXY_VISUAL_TUNING.stars;
@@ -175,6 +182,7 @@ export default function WebGPUInteractiveGalaxy({
     stage: 'loading',
   });
   const webgpuCaptureRef = useRef<((filename: string) => Promise<void>) | null>(null);
+  const performanceModeRef = useRef<PerformanceMode>('auto');
   const photoPreviousStateRef = useRef<{ explorationEnabled: boolean; selectedHotspot: GalaxyHotspotId | null }>({
     explorationEnabled: false,
     selectedHotspot: null,
@@ -193,6 +201,8 @@ export default function WebGPUInteractiveGalaxy({
   const [photoGridEnabled, setPhotoGridEnabled] = useState(false);
   const [photoPreset, setPhotoPreset] = useState<PhotoPreset>('general');
   const [photoCapturing, setPhotoCapturing] = useState(false);
+  const [performanceMode, setPerformanceMode] = useState<PerformanceMode>('auto');
+  const [utilityDockOpen, setUtilityDockOpen] = useState(false);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -231,6 +241,22 @@ export default function WebGPUInteractiveGalaxy({
       document.body.classList.remove('galaxy-photo-mode');
     };
   }, [photoModeActive]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY);
+      if (stored === 'auto' || stored === 'eco' || stored === 'balanced' || stored === 'quality') {
+        setPerformanceMode(stored);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    performanceModeRef.current = performanceMode;
+    try {
+      window.localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, performanceMode);
+    } catch {}
+  }, [performanceMode]);
 
   const finishCinematic = useCallback(() => {
     cinematicRef.current.active = false;
@@ -366,6 +392,32 @@ export default function WebGPUInteractiveGalaxy({
     return () => window.removeEventListener('keydown', onPhotoKeyDown);
   }, [exitPhotoMode, photoModeActive]);
 
+  useEffect(() => {
+    const onShortcutKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+
+      const key = event.key.toLowerCase();
+
+      if (cinematicRef.current.active) return;
+
+      if (key === 'r') {
+        event.preventDefault();
+        handleResetCamera();
+        return;
+      }
+
+      if (key === 'p') {
+        event.preventDefault();
+        if (photoModeRef.current) exitPhotoMode();
+        else enterPhotoMode();
+      }
+    };
+
+    window.addEventListener('keydown', onShortcutKeyDown);
+    return () => window.removeEventListener('keydown', onShortcutKeyDown);
+  }, [enterPhotoMode, exitPhotoMode, handleResetCamera]);
+
   const capturePhoto = useCallback(async () => {
     const capture = webgpuCaptureRef.current;
     if (!capture || photoCapturing) return;
@@ -375,7 +427,7 @@ export default function WebGPUInteractiveGalaxy({
 
     try {
       const suffix = photoPreset === 'general' ? 'general' : photoPreset;
-      await capture(`galaxia-v3.6.5.1-${suffix}.png`);
+      await capture(`galaxia-v3.6.7.2-${suffix}.png`);
     } finally {
       setPhotoCapturing(false);
     }
@@ -1169,6 +1221,12 @@ export default function WebGPUInteractiveGalaxy({
         let lastReportedBucket = -1;
         let lastPixelRatio = Math.min(window.devicePixelRatio || 1, profile.pixelRatioMax);
         let lastExplorationState = explorationRef.current;
+        const performanceTracker = new AdaptivePerformanceTracker({
+          mobile: isMobile,
+          initialTier: isMobile ? 'balanced' : quality === 'high' ? 'quality' : 'balanced',
+        });
+        let performanceSnapshot = performanceTracker.update(1 / 60, true);
+        let statsReportAccumulator = 0;
 
         const activePointers = new Map<number, ActivePointer>();
         let dragging = false;
@@ -1458,6 +1516,20 @@ export default function WebGPUInteractiveGalaxy({
           if (!running) return;
 
           const delta = Math.min(clock.getDelta(), 0.05);
+          const performanceLocked = cinematicRef.current.active || photoModeRef.current || photoCapturing;
+          const trackedSnapshot = performanceTracker.update(
+            delta,
+            performanceLocked || performanceModeRef.current !== 'auto',
+          );
+          performanceSnapshot = performanceModeRef.current === 'auto'
+            ? trackedSnapshot
+            : {
+                ...trackedSnapshot,
+                tier: performanceModeRef.current as AdaptivePerformanceTier,
+                renderScale: ADAPTIVE_RENDER_SCALE[performanceModeRef.current as AdaptivePerformanceTier],
+                changed: false,
+              };
+          statsReportAccumulator += delta;
           const easing = 1 - Math.exp(-delta * 2.0);
           pointerX += (targetX - pointerX) * easing;
           pointerY += (targetY - pointerY) * easing;
@@ -1612,10 +1684,15 @@ export default function WebGPUInteractiveGalaxy({
               const hardwareCap = isMobile
                 ? quality === 'high' ? 1.9 : quality === 'balanced' ? 1.72 : 1.55
                 : profile.pixelRatioMax;
-              const targetDpr = Math.min(
+              const requestedDpr = Math.min(
                 deviceDpr,
                 hardwareCap,
                 THREE.MathUtils.lerp(baseDpr, hardwareCap, zoomDetail),
+              );
+              const performanceFloor = isMobile ? 0.82 : 0.88;
+              const targetDpr = Math.max(
+                performanceFloor,
+                requestedDpr * performanceSnapshot.renderScale,
               );
               if (Math.abs(targetDpr - lastPixelRatio) >= 0.035) {
                 lastPixelRatio = targetDpr;
@@ -1689,6 +1766,18 @@ export default function WebGPUInteractiveGalaxy({
             }
           }
 
+          if (statsReportAccumulator >= 1.0 || performanceSnapshot.changed) {
+            statsReportAccumulator = 0;
+            setStats({
+              backend: 'WebGPU + TSL',
+              quality,
+              stars: totalStars,
+              migratedLayers: 7,
+              performanceTier: performanceSnapshot.tier,
+              fps: Math.round(performanceSnapshot.fps),
+            });
+          }
+
           renderer.render(scene, camera);
         });
 
@@ -1697,6 +1786,8 @@ export default function WebGPUInteractiveGalaxy({
           quality,
           stars: totalStars,
           migratedLayers: 7,
+          performanceTier: performanceSnapshot.tier,
+          fps: Math.round(performanceSnapshot.fps),
         });
         setState('running');
         setMessage('Renderer WebGPU interactivo listo: cinemática, hotspots, zoom, presentación y audio integrados.');
@@ -1723,7 +1814,7 @@ export default function WebGPUInteractiveGalaxy({
           }
         };
       } catch (error) {
-        console.error('[Galaxy WebGPU Interactive Experience V3.6.0]', error);
+        console.error('[Galaxy WebGPU Interactive Experience V3.6.7]', error);
         setState('error');
         setMessage('WebGPU está disponible, pero la experiencia TSL no pudo inicializarse. Se activará el fallback WebGL2.');
         onFallback?.('error');
@@ -1802,10 +1893,74 @@ export default function WebGPUInteractiveGalaxy({
         />
       )}
 
+      {!cinematicActive && state === 'running' && !photoModeActive && !photoCapturing && (
+        <>
+          {!utilityDockOpen && (
+            <button
+              type="button"
+              className="galaxyUtilityDockLauncher"
+              onClick={() => setUtilityDockOpen(true)}
+              aria-label="Abrir controles de escena"
+              aria-expanded="false"
+            >
+              <span className="galaxyUtilityDockLauncherDot" aria-hidden="true" />
+              <span>Controles</span>
+            </button>
+          )}
+
+          {utilityDockOpen && (
+            <div className="galaxyUtilityDock" aria-label="Controles de estabilidad y rendimiento">
+              <div className="galaxyUtilityDockHeader">
+                <div>
+                  <strong>Control de escena</strong>
+                  <span>{performanceMode === 'auto' ? `Auto · ${stats?.performanceTier ?? 'balanced'}` : `Manual · ${performanceMode}`}</span>
+                </div>
+                <button
+                  type="button"
+                  className="galaxyUtilityDockClose"
+                  onClick={() => setUtilityDockOpen(false)}
+                  aria-label="Cerrar controles de escena"
+                  aria-expanded="true"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="galaxyUtilityDockRow">
+                <button type="button" className="galaxyUtilityButton" onClick={handleResetCamera}>Recentrar</button>
+              </div>
+
+              <p className="galaxyUtilityOrbitHint">Arrastra sobre la galaxia para orbitarla.</p>
+
+              <div className="galaxyUtilityDockRow galaxyUtilityModes">
+                {(['auto', 'quality', 'balanced', 'eco'] as PerformanceMode[]).map((modeOption) => (
+                  <button
+                    key={modeOption}
+                    type="button"
+                    className={`galaxyUtilityButton ${performanceMode === modeOption ? 'galaxyUtilityButtonActive' : ''}`}
+                    onClick={() => setPerformanceMode(modeOption)}
+                    aria-pressed={performanceMode === modeOption}
+                  >
+                    {modeOption === 'auto' ? 'Auto' : modeOption}
+                  </button>
+                ))}
+              </div>
+
+              <div className="galaxyUtilityMeta">
+                <span>{stats?.fps ?? '—'} FPS</span>
+                <span>{stats?.stars?.toLocaleString() ?? '—'} partículas</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+
+
       {mode === 'candidate' && !cinematicActive && !explorationEnabled && (
         <div className="webgpuCandidateBadge">
           <div>
-            <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.6.0</span>
+            <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.6.7.3</span>
             <strong>WebGPU Direct Renderer</strong>
             <small>{message}</small>
           </div>
@@ -1815,6 +1970,7 @@ export default function WebGPUInteractiveGalaxy({
               <span>{stats.backend}</span>
               <span>{stats.quality}</span>
               <span>{stats.stars.toLocaleString()} partículas</span>
+              <span>{stats.performanceTier} · {stats.fps} FPS</span>
               <span>7/7 TSL</span>
             </div>
           )}

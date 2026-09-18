@@ -1162,3 +1162,455 @@ body.galaxy-photo-mode .content {
     font-size: 0.88rem;
   }
 }
+
+/* =========================================================
+   V3.6.7 · PRODUCTION POLISH & STABILIZATION
+   ========================================================= */
+
+body.galaxy-exploring,
+body.galaxy-photo-mode {
+  overscroll-behavior: none;
+}
+
+.webgpuProductionExploring .webgpuMigrationCanvas,
+body.galaxy-photo-mode .webgpuMigrationCanvas {
+  touch-action: none;
+}
+
+.galaxyUtilityDock {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 152;
+  display: grid;
+  gap: 10px;
+  width: min(320px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid rgba(194, 214, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(4, 8, 22, 0.78);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.galaxyUtilityDockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.galaxyUtilityDockHeader strong {
+  font-size: 0.92rem;
+  color: #f7f9ff;
+}
+
+.galaxyUtilityDockHeader span {
+  color: rgba(210, 223, 249, 0.72);
+  font-size: 0.75rem;
+}
+
+.galaxyUtilityDockRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.galaxyUtilityModes .galaxyUtilityButton {
+  text-transform: capitalize;
+}
+
+.galaxyUtilityButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(193, 214, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(23, 31, 60, 0.5);
+  color: rgba(240, 245, 255, 0.88);
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.galaxyUtilityButton:hover {
+  transform: translateY(-1px);
+  background: rgba(39, 52, 98, 0.62);
+  border-color: rgba(193, 214, 255, 0.28);
+}
+
+.galaxyUtilityButtonActive {
+  background: linear-gradient(135deg, rgba(126, 156, 244, 0.24), rgba(58, 83, 164, 0.34));
+  border-color: rgba(176, 202, 255, 0.4);
+  color: #ffffff;
+}
+
+.galaxyUtilityMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.galaxyUtilityMeta span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(173, 198, 255, 0.12);
+  background: rgba(126, 154, 220, 0.08);
+  color: rgba(221, 232, 255, 0.76);
+  font-size: 0.72rem;
+}
+
+.galaxyHelpPanel {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 151;
+  width: min(360px, calc(100vw - 24px));
+  padding: 16px;
+  border: 1px solid rgba(194, 214, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(4, 8, 22, 0.8);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.galaxyHelpPanel strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #ffffff;
+}
+
+.galaxyHelpPanel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.galaxyHelpPanel li {
+  display: grid;
+  grid-template-columns: minmax(92px, 120px) 1fr;
+  gap: 10px;
+  align-items: center;
+  color: rgba(226, 236, 255, 0.8);
+  font-size: 0.82rem;
+}
+
+.galaxyHelpPanel li span:first-child {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(173, 198, 255, 0.12);
+  background: rgba(126, 154, 220, 0.08);
+  color: rgba(245, 248, 255, 0.94);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .galaxyUtilityDock,
+  .galaxyHelpPanel {
+    width: min(100vw - 20px, 360px);
+  }
+
+  .galaxyUtilityDock {
+    right: 10px;
+    bottom: 10px;
+    padding: 12px;
+  }
+
+  .galaxyHelpPanel {
+    left: 10px;
+    bottom: 122px;
+    padding: 14px;
+  }
+
+  .galaxyUtilityButton {
+    min-height: 34px;
+    font-size: 0.82rem;
+  }
+
+  .galaxyHelpPanel li {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   V3.6.7.1 · MOBILE COLLAPSIBLE CONTROL
+   ========================================================= */
+
+.galaxyUtilityDockLauncher {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 152;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(194, 214, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(4, 8, 22, 0.82);
+  color: rgba(246, 249, 255, 0.94);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px);
+  cursor: pointer;
+}
+
+.galaxyUtilityDockLauncherDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c7d6ff;
+  box-shadow: 0 0 12px rgba(151, 180, 255, 0.8);
+}
+
+.galaxyUtilityDockHeader > div {
+  display: grid;
+  gap: 2px;
+}
+
+.galaxyUtilityDockClose {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(193, 214, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(23, 31, 60, 0.52);
+  color: rgba(244, 248, 255, 0.92);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.galaxyUtilityDockClose:hover {
+  background: rgba(48, 61, 110, 0.64);
+  border-color: rgba(193, 214, 255, 0.28);
+}
+
+@media (max-width: 720px) {
+  .galaxyUtilityDock {
+    right: 10px;
+    bottom: 10px;
+    width: min(276px, calc(100vw - 20px));
+    max-height: min(46svh, 330px);
+    overflow-y: auto;
+    gap: 8px;
+    padding: 11px;
+    border-radius: 14px;
+    scrollbar-width: thin;
+  }
+
+  .galaxyUtilityDockHeader {
+    align-items: flex-start;
+  }
+
+  .galaxyUtilityDockHeader strong {
+    font-size: 0.84rem;
+  }
+
+  .galaxyUtilityDockHeader span {
+    font-size: 0.68rem;
+  }
+
+  .galaxyUtilityDockRow {
+    gap: 6px;
+  }
+
+  .galaxyUtilityButton {
+    min-height: 32px;
+    padding-inline: 10px;
+    font-size: 0.76rem;
+  }
+
+  .galaxyUtilityModes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .galaxyUtilityModes .galaxyUtilityButton {
+    width: 100%;
+  }
+
+  .galaxyUtilityMeta {
+    gap: 6px;
+  }
+
+  .galaxyUtilityMeta span {
+    padding: 4px 7px;
+    font-size: 0.66rem;
+  }
+
+  .galaxyUtilityDockLauncher {
+    right: 10px;
+    bottom: 10px;
+    min-height: 40px;
+    padding-inline: 13px;
+    font-size: 0.82rem;
+  }
+
+  .galaxyHelpPanel {
+    left: 10px;
+    right: 10px;
+    bottom: auto;
+    top: max(72px, env(safe-area-inset-top));
+    width: auto;
+    max-height: 42svh;
+    overflow-y: auto;
+  }
+}
+
+
+/* =========================================================
+   V3.6.7.2 · CLEAN MOBILE CONTROLS
+   ========================================================= */
+
+.galaxyHelpPanel {
+  display: none !important;
+}
+
+.galaxyUtilityOrbitHint {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(173, 198, 255, 0.10);
+  border-radius: 10px;
+  background: rgba(126, 154, 220, 0.06);
+  color: rgba(225, 234, 252, 0.72);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .galaxyUtilityDock {
+    max-height: min(40svh, 286px);
+  }
+
+  .galaxyUtilityOrbitHint {
+    font-size: 0.68rem;
+    padding: 6px 8px;
+  }
+}
+
+/* =========================================================
+   V3.6.7.3 · COMPACT CONTROLS / DESKTOP + MOBILE
+   ========================================================= */
+
+.galaxyUtilityDock {
+  right: 12px;
+  bottom: 12px;
+  width: min(258px, calc(100vw - 20px));
+  gap: 7px;
+  padding: 10px;
+  border-radius: 13px;
+}
+
+.galaxyUtilityDockHeader {
+  gap: 8px;
+}
+
+.galaxyUtilityDockHeader strong {
+  font-size: 0.76rem;
+}
+
+.galaxyUtilityDockHeader span {
+  font-size: 0.60rem;
+}
+
+.galaxyUtilityDockRow {
+  gap: 5px;
+}
+
+.galaxyUtilityButton {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 0.66rem;
+}
+
+.galaxyUtilityDockClose {
+  width: 27px;
+  height: 27px;
+  font-size: 0.92rem;
+}
+
+.galaxyUtilityOrbitHint {
+  padding: 5px 7px;
+  border-radius: 8px;
+  font-size: 0.61rem;
+  line-height: 1.25;
+}
+
+.galaxyUtilityMeta {
+  gap: 5px;
+}
+
+.galaxyUtilityMeta span {
+  padding: 3px 6px;
+  font-size: 0.58rem;
+}
+
+.galaxyUtilityDockLauncher {
+  right: 12px;
+  bottom: 12px;
+  min-height: 32px;
+  padding: 0 10px;
+  gap: 6px;
+  font-size: 0.67rem;
+}
+
+.galaxyUtilityDockLauncherDot {
+  width: 5px;
+  height: 5px;
+}
+
+@media (max-width: 720px) {
+  .galaxyUtilityDock {
+    right: 8px;
+    bottom: 8px;
+    width: min(238px, calc(100vw - 16px));
+    max-height: min(34svh, 236px);
+    gap: 6px;
+    padding: 9px;
+    border-radius: 12px;
+  }
+
+  .galaxyUtilityDockHeader strong {
+    font-size: 0.72rem;
+  }
+
+  .galaxyUtilityDockHeader span {
+    font-size: 0.56rem;
+  }
+
+  .galaxyUtilityButton {
+    min-height: 27px;
+    padding-inline: 8px;
+    font-size: 0.62rem;
+  }
+
+  .galaxyUtilityDockClose {
+    width: 25px;
+    height: 25px;
+    font-size: 0.86rem;
+  }
+
+  .galaxyUtilityOrbitHint {
+    padding: 5px 6px;
+    font-size: 0.58rem;
+  }
+
+  .galaxyUtilityMeta span {
+    padding: 3px 5px;
+    font-size: 0.55rem;
+  }
+
+  .galaxyUtilityDockLauncher {
+    right: 8px;
+    bottom: 8px;
+    min-height: 31px;
+    padding-inline: 9px;
+    font-size: 0.64rem;
+  }
+}

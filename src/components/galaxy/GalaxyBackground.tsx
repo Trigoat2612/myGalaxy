@@ -633,8 +633,8 @@ export default function GalaxyBackground() {
 
   const lowerQuality = () => {
     if (!canChangeQuality()) return;
-    setQuality('low');
-    setMaxDpr(1);
+    setQuality((current) => current === 'high' ? 'balanced' : 'low');
+    setMaxDpr((current) => Math.max(1, current - 0.15));
   };
 
   const raiseQuality = () => {
@@ -642,8 +642,11 @@ export default function GalaxyBackground() {
 
     const nav = navigator as Navigator & { deviceMemory?: number };
     const capable = (nav.deviceMemory ?? 8) >= 6 && (nav.hardwareConcurrency ?? 8) >= 6;
-    setQuality(capable ? 'high' : 'balanced');
-    setMaxDpr(capable ? 1.35 : 1.2);
+    setQuality((current) => {
+      if (current === 'low') return 'balanced';
+      return capable ? 'high' : 'balanced';
+    });
+    setMaxDpr((current) => Math.min(capable ? 1.45 : 1.25, current + 0.12));
   };
 
   const finishCinematic = useCallback(() => {

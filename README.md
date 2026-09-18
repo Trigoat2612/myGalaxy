@@ -1,40 +1,22 @@
-# Galaxia Responsive v3.6.5
+# Galaxia Responsive v3.6.7.3
 
-Evolución aplicada: **Photo Mode + Premium Capture**.
+Corrección de interfaz: **Compact Controls + Photo Mode Priority**.
 
-## Qué cambia
-
-- Se conserva intacta la base estable v3.6.4.2: hotspots anclados y giro horizontal 360°.
-- Nuevo **Modo foto** disponible desde la interfaz principal.
-- El modo foto oculta la interfaz secundaria y deja la galaxia limpia para composición.
-- Presets rápidos de encuadre:
-  - General
-  - Núcleo
-  - Corriente
-  - Cuna estelar
-- Cuadrícula opcional de tercios para composición visual.
-- Exportación directa a **PNG de alta resolución** usando un DPR temporal de captura.
-- Durante la captura se ocultan los hotspots para producir una imagen limpia.
-- `Esc` sale del modo foto y restaura el estado de exploración previo.
-
-## Archivos principales añadidos
-
-- `src/components/galaxy/GalaxyPhotoModeOverlay.tsx`
-- `src/components/galaxy/PhotoCaptureController.tsx`
-
-## Archivos principales modificados
-
-- `src/components/galaxy/GalaxyBackground.tsx`
-- `src/components/galaxy/GalaxyBackground.module.css`
-- `src/app/globals.css`
-
-## Nota técnica
-
-La captura incrementa temporalmente el pixel ratio del renderer y restaura el estado original inmediatamente después de guardar la imagen. No modifica la calidad normal de ejecución de la escena.
-
-
-## Corrección v3.6.5.1
-- El botón **Modo foto** ahora también se renderiza en el backend WebGPU de producción, que era la causa de que no apareciera.
-- Photo Mode funciona tanto en WebGPU como en el fallback WebGL2.
-- Se agregó **Volver al inicio** debajo de la sección profesional.
-- El botón `Conoce al desarrollador` sigue desplazando a `#contacto` y el nuevo botón retorna suavemente a `#inicio`.
+## Ajustes aplicados
+- El panel **Control de escena** inicia cerrado tanto en escritorio como en móvil.
+- Se eliminó la apertura automática del panel al detectar escritorio.
+- **Modo foto** pasa a una zona independiente en la esquina superior izquierda, evitando superposición con los controles de escena y con el botón de exploración.
+- Se elevó su prioridad visual (`z-index`) para mantenerlo accesible.
+- Reducción de tamaño en escritorio y móvil de:
+  - panel Control de escena;
+  - botón Controles;
+  - Recentrar;
+  - Auto / Quality / Balanced / Eco;
+  - métricas FPS y partículas;
+  - indicación para orbitar;
+  - botón de cierre;
+  - botón Modo foto;
+  - barra y botones de Modo foto;
+  - botón Explorar galaxia / Salir de exploración.
+- Se conserva la indicación útil: **Arrastra sobre la galaxia para orbitarla.**
+- No se modificó el comportamiento de cámara, hotspots, giro 360°, audio ni motor adaptativo.
