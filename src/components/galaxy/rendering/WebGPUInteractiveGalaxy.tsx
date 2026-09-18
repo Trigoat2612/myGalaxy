@@ -72,7 +72,7 @@ const DESKTOP_MIN_ZOOM = 0.40;
 const MOBILE_MAX_ZOOM = 36;
 const DESKTOP_MAX_ZOOM = 28;
 const CINEMATIC_DURATION = 4.85;
-const CINEMATIC_SESSION_KEY = 'galaxy-webgpu-cinematic-v3.5.7-seen';
+const CINEMATIC_SESSION_KEY = 'galaxy-webgpu-cinematic-v3.6.0-seen';
 const PRESENTATION_INTERVAL_MS = 4300;
 
 const STAR_TUNING = GALAXY_VISUAL_TUNING.stars;
@@ -1588,7 +1588,7 @@ export default function WebGPUInteractiveGalaxy({
           }
         };
       } catch (error) {
-        console.error('[Galaxy WebGPU Interactive Experience V3.5.4]', error);
+        console.error('[Galaxy WebGPU Interactive Experience V3.6.0]', error);
         setState('error');
         setMessage('WebGPU está disponible, pero la experiencia TSL no pudo inicializarse. Se activará el fallback WebGL2.');
         onFallback?.('error');
@@ -1652,7 +1652,7 @@ export default function WebGPUInteractiveGalaxy({
       {mode === 'candidate' && !cinematicActive && !explorationEnabled && (
         <div className="webgpuCandidateBadge">
           <div>
-            <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.5.4</span>
+            <span className="webgpuLabEyebrow">GALAXY ENGINE · V3.6.0</span>
             <strong>WebGPU Direct Renderer</strong>
             <small>{message}</small>
           </div>

@@ -26,7 +26,7 @@ function hasWebGPU() {
 }
 
 /**
- * V3.5 promotes WebGPU to the preferred production backend. WebGL2 remains
+ * V3.6 keeps WebGPU to the preferred production backend. WebGL2 remains
  * available as an automatic and explicitly addressable fallback.
  */
 export function detectGalaxyRendererCapabilities(): GalaxyRendererCapabilities {

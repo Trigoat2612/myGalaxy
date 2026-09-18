@@ -20,9 +20,9 @@ import {
 } from './galaxyConfig';
 import RendererDiagnostics from './rendering/RendererDiagnostics';
 import { detectGalaxyRendererCapabilities } from './rendering/rendererCapabilities';
+import { getAdaptiveSceneProfile, resolveZoomBand, type ZoomBand } from './rendering/adaptiveSceneProfile';
+import type { QualityLevel } from './types';
 import styles from './GalaxyBackground.module.css';
-
-type QualityLevel = 'low' | 'balanced' | 'high';
 
 type PointerPosition = {
   x: number;
@@ -417,27 +417,6 @@ function CameraRig({
   return null;
 }
 
-function getSceneCounts(width: number, quality: QualityLevel) {
-  const isMobile = width < 640;
-  const isTablet = width >= 640 && width < 1024;
-
-  if (isMobile) {
-    if (quality === 'low') return { galaxy: 12000, dust: 1600, background: 900, shooting: 0, nebula: 0.18 };
-    if (quality === 'high') return { galaxy: 18500, dust: 2800, background: 1600, shooting: 2, nebula: 0.24 };
-    return { galaxy: 15000, dust: 2200, background: 1200, shooting: 1, nebula: 0.21 };
-  }
-
-  if (isTablet) {
-    if (quality === 'low') return { galaxy: 19500, dust: 2700, background: 1500, shooting: 2, nebula: 0.2 };
-    if (quality === 'high') return { galaxy: 30000, dust: 4700, background: 2500, shooting: 2, nebula: 0.27 };
-    return { galaxy: 24500, dust: 3700, background: 1900, shooting: 1, nebula: 0.23 };
-  }
-
-  if (quality === 'low') return { galaxy: 26000, dust: 3800, background: 2000, shooting: 3, nebula: 0.2 };
-  if (quality === 'high') return { galaxy: 42000, dust: 7000, background: 3600, shooting: 5, nebula: 0.29 };
-  return { galaxy: 34500, dust: 5400, background: 2800, shooting: 4, nebula: 0.25 };
-}
-
 function ResponsiveScene({
   quality,
   animate,
@@ -451,6 +430,7 @@ function ResponsiveScene({
   onCinematicProgress,
   onCinematicComplete,
   maxDpr,
+  zoomBand,
 }: {
   quality: QualityLevel;
   animate: boolean;
@@ -464,9 +444,16 @@ function ResponsiveScene({
   onCinematicProgress: (progress: number, stage: CinematicStage) => void;
   onCinematicComplete: () => void;
   maxDpr: number;
+  zoomBand: ZoomBand;
 }) {
   const { size } = useThree();
-  const counts = getSceneCounts(size.width, quality);
+  const profile = useMemo(() => getAdaptiveSceneProfile({
+    width: size.width,
+    quality,
+    zoomBand,
+    explorationEnabled,
+    cinematicStage,
+  }), [size.width, quality, zoomBand, explorationEnabled, cinematicStage]);
   const galaxyScale = getResponsiveGalaxyScale(size.width);
   const introActive = cinematicRef.current?.active ?? false;
 
@@ -494,13 +481,13 @@ function ResponsiveScene({
         onCinematicProgress={onCinematicProgress}
         onCinematicComplete={onCinematicComplete}
       />
-      {showNebula && <NebulaShader animate={animate} opacity={counts.nebula} />}
-      {showDepth && <DepthStarLayers count={counts.background} animate={animate} pointerRef={pointerRef} />}
+      {showNebula && <NebulaShader animate={animate} opacity={profile.nebula} />}
+      {showDepth && <DepthStarLayers layers={profile.backgroundLayers} animate={animate} pointerRef={pointerRef} />}
       {showGalaxy && (
         <group scale={galaxyScale}>
           <GalaxyShader
-            stars={counts.galaxy}
-            dust={counts.dust}
+            stars={profile.galaxy}
+            dust={profile.dust}
             animate={animate}
             explorationEnabled={explorationEnabled && !introActive}
             selectedHotspot={selectedHotspot}
@@ -509,7 +496,7 @@ function ResponsiveScene({
           />
         </group>
       )}
-      {showShooting && <ShootingStars count={counts.shooting} animate={animate} />}
+      {showShooting && <ShootingStars count={profile.shooting} animate={animate} />}
     </>
   );
 }
@@ -538,6 +525,7 @@ export default function GalaxyBackground() {
 
   const [quality, setQuality] = useState<QualityLevel>(initialQuality.quality);
   const [maxDpr, setMaxDpr] = useState(initialQuality.maxDpr);
+  const [zoomBand, setZoomBand] = useState<ZoomBand>('overview');
   const lastQualityChangeRef = useRef(0);
   const [explorationEnabled, setExplorationEnabled] = useState(false);
   const [selectedHotspot, setSelectedHotspot] = useState<GalaxyHotspotId | null>(null);
@@ -564,6 +552,22 @@ export default function GalaxyBackground() {
     document.body.classList.toggle('galaxy-exploring', explorationEnabled);
     return () => document.body.classList.remove('galaxy-exploring');
   }, [explorationEnabled]);
+
+  useEffect(() => {
+    const syncZoomBand = () => {
+      if (cinematicRef.current.active) {
+        setZoomBand('overview');
+        return;
+      }
+
+      const liveZoom = interactionRef.current.zoom ?? interactionRef.current.targetZoom ?? getViewportDefaultZoom();
+      setZoomBand(resolveZoomBand(liveZoom, explorationEnabled));
+    };
+
+    syncZoomBand();
+    const timer = window.setInterval(syncZoomBand, 180);
+    return () => window.clearInterval(timer);
+  }, [explorationEnabled, selectedHotspot, presentationActive, cinematicActive]);
 
   const canChangeQuality = () => {
     const now = performance.now();
@@ -728,6 +732,7 @@ export default function GalaxyBackground() {
               onCinematicProgress={handleCinematicProgress}
               onCinematicComplete={finishCinematic}
               maxDpr={maxDpr}
+              zoomBand={zoomBand}
             />
           </PerformanceMonitor>
         </Canvas>

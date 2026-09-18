@@ -32,7 +32,7 @@ export default function RendererDiagnostics() {
       }}
       aria-live="polite"
     >
-      <strong style={{ display: 'block', color: '#fff' }}>Renderer · V3.5</strong>
+      <strong style={{ display: 'block', color: '#fff' }}>Renderer · V3.6</strong>
       <span>WebGPU: {capabilities.webgpuAvailable ? 'available' : 'unavailable'}</span>
       <br />
       <span>WebGL2: {capabilities.webgl2Available ? 'available' : 'unavailable'}</span>
