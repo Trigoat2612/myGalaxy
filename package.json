@@ -1,6 +1,6 @@
 {
-  "name": "galaxia-responsive-v3-7-4-15-organic-stellar-clusters",
-  "version": "3.7.4-15",
+  "name": "galaxia-responsive-v3-7-4-15-2-three-type-build-fix",
+  "version": "3.7.4-15.2",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,16 +1,14 @@
-# galaxia-responsive-v3.7.4.15.1-stronger-organic-clusters
+# Galaxia Responsive v3.7.4.15.2
 
-## Ajuste aplicado
-Se incrementó el movimiento interno de los pequeños cúmulos estelares restaurados desde v3.7.1.
+Corrección de compilación sobre la v3.7.4.15.1 estable.
 
-## Cambios
-- `verticalMotion`: `0.0018 -> 0.0042`
-- `twinkleSpeed`: `0.54 -> 0.68`
-- `organic.speed`: `0.18 -> 0.32`
-- `organic.strength`: `0.010 -> 0.022`
-- `organic.verticalStrength`: `0.0045 -> 0.010`
+## Error corregido
+Next/TypeScript reportaba `TS2503: Cannot find namespace THREE` en las aserciones de tipo `THREE.BufferAttribute`.
 
-## Resultado esperado
-- Los cúmulos siguen siendo persistentes en su posición.
-- El movimiento interno es más visible.
-- Las estrellas dentro de cada cúmulo ahora tienen una deriva lateral y vertical más marcada, manteniendo un comportamiento orgánico.
+La causa era que `THREE` se carga dentro del renderer como valor mediante `await import('three/webgpu')`; ese identificador local no puede utilizarse como namespace TypeScript para anotaciones de tipo.
+
+## Corrección
+- se añadió `import type { BufferAttribute } from 'three';`
+- las 8 aserciones `as THREE.BufferAttribute` fueron reemplazadas por `as BufferAttribute`
+- no se modificó la lógica visual de la v3.7.4.15.1
+- se eliminó `tsconfig.tsbuildinfo` del paquete para evitar reutilizar caché incremental anterior

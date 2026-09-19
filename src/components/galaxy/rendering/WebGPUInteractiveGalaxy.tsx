@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { BufferAttribute } from 'three';
 
 import GalaxyAudioController from '../GalaxyAudioController';
 import GalaxyCinematicOverlay, { type CinematicStage } from '../GalaxyCinematicOverlay';
@@ -713,10 +714,10 @@ export default function WebGPUInteractiveGalaxy({
           group.add(halo, ring, cloud, accent, spikeA, spikeB, core);
 
           const fillEventField = (kind: CosmicEventKind) => {
-            const cloudPosition = cloudGeometry.getAttribute('position') as THREE.BufferAttribute;
-            const cloudColor = cloudGeometry.getAttribute('color') as THREE.BufferAttribute;
-            const accentPosition = accentGeometry.getAttribute('position') as THREE.BufferAttribute;
-            const accentColor = accentGeometry.getAttribute('color') as THREE.BufferAttribute;
+            const cloudPosition = cloudGeometry.getAttribute('position') as BufferAttribute;
+            const cloudColor = cloudGeometry.getAttribute('color') as BufferAttribute;
+            const accentPosition = accentGeometry.getAttribute('position') as BufferAttribute;
+            const accentColor = accentGeometry.getAttribute('color') as BufferAttribute;
             const cloudPositionArray = cloudPosition.array as Float32Array;
             const cloudColorArray = cloudColor.array as Float32Array;
             const accentPositionArray = accentPosition.array as Float32Array;
@@ -1909,10 +1910,10 @@ export default function WebGPUInteractiveGalaxy({
         const reducedCosmicMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const configureCosmicEventVisual = (kind: CosmicEventKind) => {
-          const cloudPosition = cosmicEvent.cloudGeometry.getAttribute('position') as THREE.BufferAttribute;
-          const cloudColor = cosmicEvent.cloudGeometry.getAttribute('color') as THREE.BufferAttribute;
-          const accentPosition = cosmicEvent.accentGeometry.getAttribute('position') as THREE.BufferAttribute;
-          const accentColor = cosmicEvent.accentGeometry.getAttribute('color') as THREE.BufferAttribute;
+          const cloudPosition = cosmicEvent.cloudGeometry.getAttribute('position') as BufferAttribute;
+          const cloudColor = cosmicEvent.cloudGeometry.getAttribute('color') as BufferAttribute;
+          const accentPosition = cosmicEvent.accentGeometry.getAttribute('position') as BufferAttribute;
+          const accentColor = cosmicEvent.accentGeometry.getAttribute('color') as BufferAttribute;
           const cloudPositionArray = cloudPosition.array as Float32Array;
           const cloudColorArray = cloudColor.array as Float32Array;
           const accentPositionArray = accentPosition.array as Float32Array;
