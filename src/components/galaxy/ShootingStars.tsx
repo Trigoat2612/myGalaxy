@@ -33,53 +33,48 @@ const shootingStarFragmentShader = /* glsl */ `
 
   void main() {
     vec2 p = vUv - vec2(0.5);
-    float r = length(p);
+    float twinkle = 0.93 + 0.07 * sin(uTime * 3.1 + uPhase * 1.7);
 
-    if (r > 0.5) discard;
+    float core = exp(-dot(p, p) * 96.0);
+    float coma = exp(-dot(vec2((p.x + 0.06) * 1.1, p.y * 0.9), vec2((p.x + 0.06) * 1.1, p.y * 0.9)) * 18.0);
+    float halo = exp(-dot(vec2(p.x * 0.82, p.y * 0.82), vec2(p.x * 0.82, p.y * 0.82)) * 6.0);
 
-    float twinkle = 0.92 + 0.08 * sin(uTime * 3.2 + uPhase);
+    float spikeA = exp(-abs(p.y) * 36.0) * exp(-abs(p.x) * 4.5);
+    float spikeB = exp(-abs((p.y - p.x) * 0.7071) * 32.0) * exp(-abs((p.x + p.y) * 0.7071) * 4.2);
+    float spikeC = exp(-abs((p.y + p.x) * 0.7071) * 32.0) * exp(-abs((p.x - p.y) * 0.7071) * 4.2);
+    float diffraction = max(spikeA * 0.22, max(spikeB, spikeC) * 0.14);
 
-    float core = 1.0 - smoothstep(0.0, 0.075, r);
-    float midGlow = 1.0 - smoothstep(0.045, 0.19, r);
-    float halo = 1.0 - smoothstep(0.10, 0.50, r);
+    float intensity = core * 1.32 + coma * 0.9 + halo * 0.34 + diffraction;
+    float alpha = clamp(intensity * uOpacity * twinkle, 0.0, 1.0);
 
-    // Destello en cruz muy sutil para que la cabeza se lea como una estrella,
-    // sin convertirse en un icono artificial.
-    float horizontalSpike = exp(-abs(p.y) * 82.0) * exp(-abs(p.x) * 8.0);
-    float verticalSpike = exp(-abs(p.x) * 82.0) * exp(-abs(p.y) * 8.0);
-    float spikes = (horizontalSpike + verticalSpike) * 0.13;
+    vec3 color = mix(uHaloColor, uCoreColor, clamp(core * 0.95 + coma * 0.5, 0.0, 1.0));
+    color *= 0.92 + core * 1.12 + coma * 0.18;
 
-    float intensity = core * 1.0 + midGlow * 0.50 + halo * 0.24 + spikes;
-    float alpha = intensity * uOpacity * twinkle;
-
-    vec3 color = mix(uHaloColor, uCoreColor, clamp(core + midGlow * 0.42, 0.0, 1.0));
-    color *= 0.92 + core * 0.72 + midGlow * 0.14;
-
+    if (alpha < 0.01) discard;
     gl_FragColor = vec4(color, alpha);
   }
 `;
 
 function createTailTexture() {
-  const width = 192;
-  const height = 16;
+  const width = 256;
+  const height = 24;
   const data = new Uint8Array(width * height * 4);
 
   for (let y = 0; y < height; y++) {
     const ny = (y / (height - 1) - 0.5) * 2;
-    const verticalFalloff = Math.exp(-(ny * ny) * 7.5);
 
     for (let x = 0; x < width; x++) {
       const t = x / (width - 1);
+      const verticalBody = Math.exp(-(ny * ny) * (7.0 + t * 2.5));
+      const softRim = Math.exp(-(ny * ny) * 2.1);
+      const body = Math.pow(t, 2.2) * 0.9;
+      const haze = Math.pow(t, 1.2) * 0.18;
+      const waviness = 0.92 + 0.08 * Math.sin(t * 18.0 + ny * 6.0);
+      const alpha = Math.min(1, (body * verticalBody + haze * softRim) * waviness);
 
-      // Casi invisible en el extremo y más concentrada junto a la cabeza.
-      const longitudinal = Math.pow(t, 2.15);
-      const softBody = Math.pow(t, 0.9) * 0.22;
-      const alpha = Math.min(1, (longitudinal * 0.78 + softBody) * verticalFalloff);
-
-      // La cola empieza azul-violeta y termina blanco-azulada junto a la estrella.
-      const r = Math.round(112 + t * 126);
-      const g = Math.round(138 + t * 105);
-      const b = Math.round(200 + t * 55);
+      const r = Math.round(118 + t * 120);
+      const g = Math.round(144 + t * 98);
+      const b = Math.round(204 + t * 42);
 
       const offset = (y * width + x) * 4;
       data[offset] = r;
@@ -114,24 +109,24 @@ function resetStar(
   random: () => number,
   state: ShootingStarState,
   tail: THREE.Mesh | null,
+  tailGlow: THREE.Mesh | null,
   head: THREE.Mesh | null,
 ) {
-  const fromUpperBand = random() > 0.26;
+  const fromUpperBand = random() > 0.24;
 
   group.position.set(
     -17 - random() * 7,
-    fromUpperBand ? 2.8 + random() * 8.2 : -0.5 + random() * 4.0,
+    fromUpperBand ? 2.2 + random() * 8.8 : -0.2 + random() * 4.3,
     -5.5 + random() * 10.5,
   );
 
-  // Trayectorias diagonales parecidas, pero no idénticas.
-  state.angle = -0.20 - random() * 0.33;
-  state.speed = 4.4 + random() * 3.5;
-  state.scale = 0.72 + random() * 0.62;
-  state.tailLength = 1.25 + random() * 1.55;
-  state.tailWidth = 0.055 + random() * 0.045;
-  state.opacity = 0.72 + random() * 0.22;
-  state.delay = 1.8 + random() * 8.5;
+  state.angle = -0.18 - random() * 0.28;
+  state.speed = 4.0 + random() * 2.8;
+  state.scale = 0.75 + random() * 0.56;
+  state.tailLength = 1.45 + random() * 1.75;
+  state.tailWidth = 0.05 + random() * 0.038;
+  state.opacity = 0.74 + random() * 0.22;
+  state.delay = 1.5 + random() * 7.5;
 
   group.rotation.z = state.angle;
   group.scale.setScalar(state.scale);
@@ -142,6 +137,11 @@ function resetStar(
     tail.position.x = state.tailLength * 0.5;
   }
 
+  if (tailGlow) {
+    tailGlow.scale.set(state.tailLength * 1.08, state.tailWidth * 2.2, 1);
+    tailGlow.position.x = state.tailLength * 0.48;
+  }
+
   if (head) {
     head.position.x = state.tailLength;
   }
@@ -150,6 +150,7 @@ function resetStar(
 function ShootingStar({ index, animate }: { index: number; animate: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
   const tailRef = useRef<THREE.Mesh>(null);
+  const tailGlowRef = useRef<THREE.Mesh>(null);
   const headRef = useRef<THREE.Mesh>(null);
   const headMaterialRef = useRef<THREE.ShaderMaterial>(null);
 
@@ -171,8 +172,8 @@ function ShootingStar({ index, animate }: { index: number; animate: boolean }) {
       uTime: { value: 0 },
       uPhase: { value: index * 1.731 },
       uOpacity: { value: 0.9 },
-      uCoreColor: { value: new THREE.Color('#fff2d8') },
-      uHaloColor: { value: new THREE.Color('#a9bee8') },
+      uCoreColor: { value: new THREE.Color('#fff6e8') },
+      uHaloColor: { value: new THREE.Color('#aebef0') },
     }),
     [index],
   );
@@ -186,10 +187,10 @@ function ShootingStar({ index, animate }: { index: number; animate: boolean }) {
       randomRef.current,
       stateRef.current,
       tailRef.current,
+      tailGlowRef.current,
       headRef.current,
     );
 
-    // Escalona la primera aparición para evitar que todas salgan juntas.
     stateRef.current.delay += index * 1.15;
   }, [index]);
 
@@ -238,6 +239,7 @@ function ShootingStar({ index, animate }: { index: number; animate: boolean }) {
         randomRef.current,
         state,
         tailRef.current,
+        tailGlowRef.current,
         headRef.current,
       );
     }
@@ -245,10 +247,20 @@ function ShootingStar({ index, animate }: { index: number; animate: boolean }) {
 
   return (
     <group ref={groupRef} renderOrder={4}>
-      {/*
-        Cola: una sola textura 2D con caída longitudinal y vertical.
-        El plano mide 1x1 y se escala por estrella para variar longitud/ancho.
-      */}
+      <mesh ref={tailGlowRef} position={[1, 0, 0]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={tailTexture}
+          transparent
+          depthWrite={false}
+          depthTest={false}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          opacity={0.14}
+          toneMapped={false}
+        />
+      </mesh>
+
       <mesh ref={tailRef} position={[1, 0, 0]}>
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial
@@ -258,17 +270,13 @@ function ShootingStar({ index, animate }: { index: number; animate: boolean }) {
           depthTest={false}
           side={THREE.DoubleSide}
           blending={THREE.AdditiveBlending}
-          opacity={0.30}
+          opacity={0.34}
           toneMapped={false}
         />
       </mesh>
 
-      {/*
-        Cabeza premium: shader radial con núcleo cálido, halo azul y destello sutil.
-        Así utiliza el mismo lenguaje visual que las estrellas de la galaxia.
-      */}
       <mesh ref={headRef} position={[2, 0, 0]}>
-        <planeGeometry args={[0.19, 0.19]} />
+        <planeGeometry args={[0.24, 0.24]} />
         <shaderMaterial
           ref={headMaterialRef}
           uniforms={headUniforms}

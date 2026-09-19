@@ -8,7 +8,7 @@ import { detectGalaxyRendererCapabilities } from './rendererCapabilities';
 
 type ProductionBackend = 'detecting' | 'webgpu' | 'webgl2';
 
-const WEBGPU_FAILURE_SESSION_KEY = 'galaxy-webgpu-v3.7.1-fallback';
+const WEBGPU_FAILURE_SESSION_KEY = 'galaxy-webgpu-v3.7.4-fallback';
 const SHOW_DIAGNOSTICS = process.env.NEXT_PUBLIC_GALAXY_RENDERER_DEBUG === '1';
 
 export default function ProductionGalaxyBackground() {
@@ -54,7 +54,7 @@ export default function ProductionGalaxyBackground() {
 
       {SHOW_DIAGNOSTICS && backend === 'webgpu' && (
         <aside className="rendererProductionDebug" aria-live="polite">
-          <strong>Renderer · V3.7.1</strong>
+          <strong>Renderer · V3.7.4</strong>
           <span>Active: {backend === 'webgpu' ? 'WebGPU + TSL' : 'WebGL2 fallback'}</span>
           {fallbackReason && <span>Fallback: {fallbackReason}</span>}
           <div>

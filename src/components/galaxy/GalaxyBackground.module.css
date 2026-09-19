@@ -7,8 +7,7 @@
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse at 50% 46%, rgba(36, 48, 91, 0.08), transparent 36%),
-    radial-gradient(ellipse at center, #050817 0%, #02040d 50%, #010208 100%);
+    radial-gradient(ellipse at center, #050817 0%, #02040d 54%, #010208 100%);
 }
 
 .galaxy canvas {
@@ -24,9 +23,7 @@
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 50%, rgba(205, 214, 255, 0.028) 0%, rgba(86, 101, 164, 0.014) 24%, transparent 52%),
-    radial-gradient(circle at 32% 64%, rgba(80, 91, 153, 0.018), transparent 26%),
-    radial-gradient(circle at 70% 31%, rgba(95, 75, 130, 0.012), transparent 25%);
+    radial-gradient(ellipse at 50% 50%, rgba(205, 214, 255, 0.010) 0%, rgba(86, 101, 164, 0.004) 20%, transparent 42%);
 }
 
 .galaxy::after {

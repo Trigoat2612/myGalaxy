@@ -24,9 +24,9 @@ export const GALAXY_HOTSPOTS: GalaxyHotspot[] = [
     id: 'inner-arm',
     label: 'Corriente estelar',
     shortLabel: 'Corriente',
-    description: 'Flujo estelar curvo con traza luminosa, condensaciones jóvenes y halo difuso.',
-    position: [4.10, 0.09, 1.40],
-    cameraTarget: [4.10, 0.09, 1.40],
+    description: 'Sector del brazo galáctico para exploración visual, sin corrientes aleatorias ni efectos invasivos.',
+    position: [3.98, 0.10, 1.32],
+    cameraTarget: [3.98, 0.10, 1.32],
     zoom: 1.16,
   },
   {

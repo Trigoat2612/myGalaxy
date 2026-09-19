@@ -270,34 +270,26 @@ function CoreMarker({ selected }: { selected: boolean }) {
 }
 
 function StellarStreamMarker({ selected }: { selected: boolean }) {
-  const points = useMemo(
-    () => [
-      { pos: [-0.22, -0.08, 0.0] as [number, number, number], size: 0.11, core: '#b9ceff', halo: '#7fa1ff', opacity: 0.52, seed: 2.0 },
-      { pos: [-0.12, -0.03, 0.01] as [number, number, number], size: 0.13, core: '#d9e5ff', halo: '#88a9ff', opacity: 0.58, seed: 2.4 },
-      { pos: [0.0, 0.0, 0.02] as [number, number, number], size: 0.18, core: '#fff2d8', halo: '#d8e4ff', opacity: 0.82, seed: 2.8 },
-      { pos: [0.13, 0.05, 0.03] as [number, number, number], size: 0.12, core: '#ffffff', halo: '#bfd2ff', opacity: 0.64, seed: 3.2 },
-      { pos: [0.24, 0.09, 0.04] as [number, number, number], size: 0.09, core: '#c7d8ff', halo: '#7b9eff', opacity: 0.46, seed: 3.6 },
-    ],
-    [],
-  );
-
-
   return (
-    <group rotation={[0, 0, -0.35]}>
-      <NebulaPuff size={[0.9, 0.26]} colorA="#5573d1" colorB="#9ab0ff" opacity={selected ? 0.26 : 0.18} seed={2.3} rotation={-0.18} />
-      <NebulaPuff size={[0.54, 0.18]} colorA="#8aa5ff" colorB="#d8e4ff" opacity={selected ? 0.22 : 0.14} seed={3.1} position={[0.04, 0.01, 0.0]} rotation={-0.18} />
-      {points.map((point) => (
-        <StarBillboard
-          key={`${point.seed}`}
-          size={selected ? point.size * 1.08 : point.size}
-          coreColor={point.core}
-          haloColor={point.halo}
-          opacity={selected ? Math.min(0.95, point.opacity + 0.08) : point.opacity}
-          seed={point.seed}
-          position={point.pos}
-          selected={selected}
-        />
-      ))}
+    <group rotation={[0, 0, -0.18]}>
+      <NebulaPuff
+        size={[0.42, 0.12]}
+        colorA="#5d77c4"
+        colorB="#d8e4ff"
+        opacity={selected ? 0.040 : 0.024}
+        seed={20.2}
+        position={[0.0, 0.0, -0.01]}
+        rotation={-0.12}
+      />
+      <StarBillboard
+        size={selected ? 0.095 : 0.078}
+        coreColor="#f8fbff"
+        haloColor="#a9c1ff"
+        opacity={selected ? 0.42 : 0.28}
+        seed={22.6}
+        position={[0.0, 0.0, 0.01]}
+        selected={false}
+      />
     </group>
   );
 }
@@ -313,7 +305,6 @@ function StellarNurseryMarker({ selected }: { selected: boolean }) {
     ],
     [],
   );
-
 
   return (
     <group rotation={[0, 0, -0.35]}>

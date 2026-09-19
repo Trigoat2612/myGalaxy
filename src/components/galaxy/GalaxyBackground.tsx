@@ -382,10 +382,7 @@ function CameraRig({
       ? new THREE.Vector3(...hotspot.cameraTarget)
       : new THREE.Vector3(...DEFAULT_CAMERA.target);
 
-    if (!explorationEnabled && animate) {
-      desiredTarget.x += pointer.x * 0.035;
-      desiredTarget.y += pointer.y * 0.018;
-    }
+
 
     const targetEasing = 1 - Math.exp(-delta * (hotspot ? 2.8 : 2.1));
     currentTargetRef.current.lerp(desiredTarget, targetEasing);
@@ -395,10 +392,9 @@ function CameraRig({
     let desiredZoom = interaction.targetZoom;
 
     if (!explorationEnabled) {
-      const idleYaw = animate ? Math.sin(state.clock.elapsedTime * 0.05) * 0.0025 : 0;
-      desiredYaw = pointer.x * 0.011 + idleYaw;
-      desiredPitch = DEFAULT_CAMERA.pitch - pointer.y * 0.006;
-      desiredZoom = baseZoom + (animate ? Math.cos(state.clock.elapsedTime * 0.035) * 0.03 : 0);
+      desiredYaw = DEFAULT_CAMERA.yaw;
+      desiredPitch = DEFAULT_CAMERA.pitch;
+      desiredZoom = baseZoom;
     }
 
     const orbitEasing = 1 - Math.exp(-delta * 3.0);
@@ -458,13 +454,14 @@ function ResponsiveScene({
   photoCapturing: boolean;
 }) {
   const { size } = useThree();
+  const sceneUsesExplorationBackground = explorationEnabled || cinematicStage === 'complete';
   const profile = useMemo(() => getAdaptiveSceneProfile({
     width: size.width,
     quality,
     zoomBand,
-    explorationEnabled,
+    explorationEnabled: sceneUsesExplorationBackground,
     cinematicStage,
-  }), [size.width, quality, zoomBand, explorationEnabled, cinematicStage]);
+  }), [size.width, quality, zoomBand, sceneUsesExplorationBackground, cinematicStage]);
   const galaxyScale = getResponsiveGalaxyScale(size.width);
   const visualProfile = useMemo(() => {
     const baseProfile = GALAXY_VISUAL_PROFILES[visualProfileId];
